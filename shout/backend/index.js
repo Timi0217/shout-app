@@ -19,6 +19,11 @@ app.get('/sessions', (req, res) => {
   res.json({ status: 'success', sessions: ['test-session'] });
 });
 
+app.post('/sessions', (req, res) => {
+  // Temporary: echo back the request for testing
+  res.json({ status: 'created', data: req.body });
+});
+
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`);
 });
