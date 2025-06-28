@@ -22,7 +22,9 @@
       },
       "edgeToEdgeEnabled": true
     },
-    "web": {},
+    "web": {
+      "bundler": "webpack"
+    },
     "plugins": [
       "expo-secure-store"
     ],
