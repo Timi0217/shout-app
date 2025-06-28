@@ -41,6 +41,7 @@ export default function PhoneLoginScreen({ navigation, route }) {
   };
 
   const verifyOtp = async () => {
+    console.log('OTP Submit clicked', otp);
     setLoading(true);
     try {
       const formattedPhone = formatPhoneNumber(phone);
@@ -94,7 +95,9 @@ export default function PhoneLoginScreen({ navigation, route }) {
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
-            autoFocus
+            autoFocus={true}
+            editable={true}
+            onFocus={() => console.log('Phone input focused')}
           />
           <TouchableOpacity
             style={[styles.button, { opacity: phone.replace(/\D/g, '').length >= 10 ? 1 : 0.5 }]}
@@ -114,7 +117,9 @@ export default function PhoneLoginScreen({ navigation, route }) {
             keyboardType="number-pad"
             value={otp}
             onChangeText={setOtp}
-            autoFocus
+            autoFocus={true}
+            editable={true}
+            onFocus={() => console.log('OTP input focused')}
           />
           <TouchableOpacity
             style={[styles.button, { opacity: otp.length >= 4 ? 1 : 0.5 }]}

@@ -14,6 +14,7 @@ export default function JoinSessionScreen({ navigation }) {
   const [error, setError] = useState('');
 
   const handleGoToSession = async () => {
+    console.log('Go to Session clicked', sessionCode);
     Keyboard.dismiss();
     setLoading(true);
     setError('');
@@ -73,6 +74,9 @@ export default function JoinSessionScreen({ navigation }) {
             value={sessionCode}
             onChangeText={setSessionCode}
             autoCapitalize="characters"
+            autoFocus={true}
+            editable={true}
+            onFocus={() => console.log('Session code input focused')}
           />
           <TouchableOpacity
             style={[styles.button, { opacity: sessionCode ? 1 : 0.5 }]}
