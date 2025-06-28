@@ -11,11 +11,11 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.send('✅ Backend is alive!');
+  res.send('🚨 THIS IS THE NEWEST DEPLOY 🚨');
 });
 
 app.get('/sessions', (req, res) => {
-  res.json({ status: 'success', sessions: [] });
+  res.json({ status: 'success', sessions: ['test-session'] });
 });
 
 app.listen(PORT, () => {
