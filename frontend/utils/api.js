@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.1.155:4000'; // Local network IP for backend access from Expo Go
+const API_URL = 'https://joinshout.fyi'; // Production backend URL using HTTPS
 
 export async function createSession({ dj_id, venue_name, status }) {
   const res = await fetch(`${API_URL}/sessions`, {
