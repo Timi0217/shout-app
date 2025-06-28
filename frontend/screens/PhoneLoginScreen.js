@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert, Platform, Pressable } from 'react-native';
 import { supabase } from '../supabase';
 import colors from '../constants/colors';
 import { useAuth } from '../AuthContext';
@@ -41,14 +41,12 @@ export default function PhoneLoginScreen({ navigation, route }) {
   };
 
   const verifyOtp = async () => {
-    console.log('OTP Submit clicked', otp);
     setLoading(true);
     try {
       const formattedPhone = formatPhoneNumber(phone);
       const { data, error } = await supabase.auth.verifyOtp({ phone: formattedPhone, token: otp, type: 'sms' });
       if (error) throw error;
       setUser(data.user);
-      
       // Check if there's an onLoginSuccess callback from route params
       const onLoginSuccess = route?.params?.onLoginSuccess;
       if (onLoginSuccess) {
@@ -66,7 +64,7 @@ export default function PhoneLoginScreen({ navigation, route }) {
     navigation.setOptions({
       headerTitle: '',
       headerLeft: () => (
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
             if (navigation.canGoBack()) {
               navigation.goBack();
@@ -77,7 +75,7 @@ export default function PhoneLoginScreen({ navigation, route }) {
           style={{ marginLeft: 16 }}
         >
           <Ionicons name="arrow-back" size={28} color="#222" />
-        </TouchableOpacity>
+        </Pressable>
       ),
     });
   }, [navigation]);
@@ -97,15 +95,24 @@ export default function PhoneLoginScreen({ navigation, route }) {
             onChangeText={setPhone}
             autoFocus={true}
             editable={true}
-            onFocus={() => console.log('Phone input focused')}
+            onFocus={() => {}}
+            accessible={true}
+            accessibilityLabel="Phone number input"
+            onKeyPress={({ nativeEvent }) => {
+              if (Platform.OS === 'web' && nativeEvent.key === 'Enter' && phone.replace(/\D/g, '').length >= 10) {
+                sendOtp();
+              }
+            }}
           />
-          <TouchableOpacity
+          <Pressable
             style={[styles.button, { opacity: phone.replace(/\D/g, '').length >= 10 ? 1 : 0.5 }]}
             onPress={sendOtp}
             disabled={loading || phone.replace(/\D/g, '').length < 10}
+            accessibilityRole="button"
+            accessibilityLabel="Submit phone number"
           >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Submit</Text>}
-          </TouchableOpacity>
+          </Pressable>
         </>
       ) : (
         <>
@@ -119,15 +126,24 @@ export default function PhoneLoginScreen({ navigation, route }) {
             onChangeText={setOtp}
             autoFocus={true}
             editable={true}
-            onFocus={() => console.log('OTP input focused')}
+            onFocus={() => {}}
+            accessible={true}
+            accessibilityLabel="OTP input"
+            onKeyPress={({ nativeEvent }) => {
+              if (Platform.OS === 'web' && nativeEvent.key === 'Enter' && otp.length >= 4) {
+                verifyOtp();
+              }
+            }}
           />
-          <TouchableOpacity
+          <Pressable
             style={[styles.button, { opacity: otp.length >= 4 ? 1 : 0.5 }]}
             onPress={verifyOtp}
             disabled={loading || otp.length < 4}
+            accessibilityRole="button"
+            accessibilityLabel="Submit OTP"
           >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Submit</Text>}
-          </TouchableOpacity>
+          </Pressable>
         </>
       )}
     </View>
