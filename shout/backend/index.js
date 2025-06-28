@@ -6,7 +6,10 @@ const { spotifySearch } = require('./spotify');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://joinshout.fyi',
+  credentials: true
+}));
 app.use(express.json());
 
 // Create a new session (DJ)
@@ -266,6 +269,4 @@ app.delete('/sessions/:session_id/requests/:request_id', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Backend listening on port ${PORT}`);
-}); 
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

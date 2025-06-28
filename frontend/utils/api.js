@@ -1,4 +1,4 @@
-const API_URL = 'https://joinshout.fyi'; // Production backend URL using HTTPS
+const API_URL = 'https://amiable-upliftment-production.up.railway.app'; // Production backend URL using HTTPS
 
 export async function createSession({ dj_id, venue_name, status }) {
   const res = await fetch(`${API_URL}/sessions`, {
