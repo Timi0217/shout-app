@@ -34,9 +34,7 @@ app.get('/sessions', (req, res) => {
 app.post('/sessions', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'https://joinshout.fyi');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  console.log('POST /sessions hit');
-  console.log('Request body:', req.body);
-  res.json({ status: 'created', data: req.body });
+  res.send('hello');
 });
 
 app.listen(PORT, () => {
