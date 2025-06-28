@@ -360,31 +360,31 @@ export default function SessionScreen({ route, navigation }) {
                       overshootRight={false}
                       rightThreshold={64}
                     >
-                      <View style={styles.queueRowBlack}>
-                        <View style={styles.songInfo}>
-                          <Text style={styles.songTitleWhite}>{item.song_title}</Text>
-                          <Text style={styles.songArtistWhite}>{item.artist}</Text>
-                        </View>
-                        <View style={styles.voteCountBadgeYellow}>
-                          <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
-                        </View>
-                        <View style={styles.voteArrowGroupBlack}>
-                          <TouchableOpacity
-                            style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                            onPress={() => handleUpvote(item.request_id)}
-                            disabled={voteUsage.upvotes_left === 0}
-                          >
-                            <Text style={styles.voteArrowWhite}>▲</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                            onPress={() => handleDownvote(item.request_id)}
-                            disabled={voteUsage.downvotes_left === 0}
-                          >
-                            <Text style={styles.voteArrowWhite}>▼</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
+                  <View style={styles.queueRowBlack}>
+                    <View style={styles.songInfo}>
+                      <Text style={styles.songTitleWhite}>{item.song_title}</Text>
+                      <Text style={styles.songArtistWhite}>{item.artist}</Text>
+                    </View>
+                    <View style={styles.voteCountBadgeYellow}>
+                      <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
+                    </View>
+                    <View style={styles.voteArrowGroupBlack}>
+                      <TouchableOpacity
+                        style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                        onPress={() => handleUpvote(item.request_id)}
+                        disabled={voteUsage.upvotes_left === 0}
+                      >
+                        <Text style={styles.voteArrowWhite}>▲</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                        onPress={() => handleDownvote(item.request_id)}
+                        disabled={voteUsage.downvotes_left === 0}
+                      >
+                        <Text style={styles.voteArrowWhite}>▼</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                     </Swipeable>
                   ) : (
                     <View style={styles.queueRowBlack}>
