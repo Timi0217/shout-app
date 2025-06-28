@@ -23,7 +23,8 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "static"
     },
     "plugins": [
       "expo-secure-store"
