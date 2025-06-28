@@ -8,6 +8,7 @@ app.use(cors({
   origin: 'https://joinshout.fyi',
   credentials: true
 }));
+app.options('*', cors({ origin: 'https://joinshout.fyi', credentials: true }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
