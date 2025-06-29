@@ -103,25 +103,34 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Helper to get integer session_id from session_code
+async function getSessionIdFromCode(session_code) {
+  const result = await db.query('SELECT session_id FROM sessions WHERE session_code = $1', [session_code]);
+  if (result.rows.length === 0) throw new Error('Session not found');
+  return result.rows[0].session_id;
+}
+
 // --- SONG REQUEST QUEUE ENDPOINTS ---
 // Get song queue for a session
 app.get('/sessions/:session_id/requests', async (req, res) => {
   try {
-    const { session_id } = req.params;
+    const session_code = req.params.session_id;
+    const session_id = await getSessionIdFromCode(session_code);
     const result = await db.query(
       'SELECT * FROM requests WHERE session_id = $1 ORDER BY vote_count DESC, timestamp ASC',
       [session_id]
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch queue' });
+    res.status(500).json({ error: err.message || 'Failed to fetch queue' });
   }
 });
 
 // Add a song request to a session
 app.post('/sessions/:session_id/requests', async (req, res) => {
   try {
-    const { session_id } = req.params;
+    const session_code = req.params.session_id;
+    const session_id = await getSessionIdFromCode(session_code);
     const { song_title, artist, user_id } = req.body;
     const result = await db.query(
       'INSERT INTO requests (session_id, user_id, song_title, artist) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -129,18 +138,20 @@ app.post('/sessions/:session_id/requests', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to add song request' });
+    res.status(500).json({ error: err.message || 'Failed to add song request' });
   }
 });
 
 // Remove a song request
 app.delete('/sessions/:session_id/requests/:request_id', async (req, res) => {
   try {
+    const session_code = req.params.session_id;
+    const session_id = await getSessionIdFromCode(session_code); // for validation, not used in query
     const { request_id } = req.params;
     await db.query('DELETE FROM requests WHERE request_id = $1', [request_id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to remove song request' });
+    res.status(500).json({ error: err.message || 'Failed to remove song request' });
   }
 });
 
@@ -172,11 +183,23 @@ app.post('/requests/:request_id/downvote', async (req, res) => {
 });
 
 // --- USAGE ENDPOINTS (dummy, always allow 3 adds/upvotes, 1 downvote) ---
-app.get('/sessions/:session_id/add-usage/:user_id', (req, res) => {
-  res.json({ adds_left: 3, add_reset_seconds: 0 });
+app.get('/sessions/:session_id/add-usage/:user_id', async (req, res) => {
+  try {
+    const session_code = req.params.session_id;
+    await getSessionIdFromCode(session_code); // for validation
+    res.json({ adds_left: 3, add_reset_seconds: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to get add usage' });
+  }
 });
-app.get('/sessions/:session_id/vote-usage/:user_id', (req, res) => {
-  res.json({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
+app.get('/sessions/:session_id/vote-usage/:user_id', async (req, res) => {
+  try {
+    const session_code = req.params.session_id;
+    await getSessionIdFromCode(session_code); // for validation
+    res.json({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to get vote usage' });
+  }
 });
 
 // --- SPOTIFY SEARCH ENDPOINT ---
