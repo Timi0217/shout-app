@@ -3,20 +3,13 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// BULLETPROOF CORS with credentials support
+// SIMPLE CORS - no credentials needed
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   // Log for debugging
   console.log('Request from origin:', origin);
-  // Handle credentials properly - can't use * with credentials
-  if (origin && (origin.includes('joinshout.fyi') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else {
-    // Fallback for requests without origin
-    res.setHeader('Access-Control-Allow-Origin', 'https://www.joinshout.fyi');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
+  // Simple CORS without credentials
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
   res.setHeader('Access-Control-Max-Age', '86400');
