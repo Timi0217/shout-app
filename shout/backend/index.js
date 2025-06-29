@@ -3,15 +3,13 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Simple but effective CORS setup
+// BULLETPROOF CORS - this will work for ANY origin
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  // Log for debugging
   console.log('Request from origin:', origin);
-  // Allow all joinshout.fyi variations and localhost
-  if (origin && (origin.includes('joinshout.fyi') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // Set CORS headers for ALL origins (temporary for debugging)
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
   res.setHeader('Access-Control-Max-Age', '86400');
@@ -119,7 +117,7 @@ app.get('/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🎵 SHOUT Backend listening on port ${PORT}`);
-  console.log(`🚀 CORS enabled for all joinshout.fyi variations`);
+  console.log(`🚀 CORS enabled for ALL origins (debugging mode)`);
   console.log(`📊 Health check: /health`);
 });
-//test// force redeploy 2
+//test// CORS fix wildcard approach
