@@ -3,13 +3,20 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// BULLETPROOF CORS - this will work for ANY origin
+// BULLETPROOF CORS with credentials support
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   // Log for debugging
   console.log('Request from origin:', origin);
-  // Set CORS headers for ALL origins (temporary for debugging)
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Handle credentials properly - can't use * with credentials
+  if (origin && (origin.includes('joinshout.fyi') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    // Fallback for requests without origin
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.joinshout.fyi');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
   res.setHeader('Access-Control-Max-Age', '86400');
@@ -99,5 +106,5 @@ app.listen(PORT, () => {
   console.log(`🎵 SHOUT Backend listening on port ${PORT}`);
   console.log(`🚀 CORS enabled for ALL origins (debugging mode)`);
   console.log(`📊 Health check: /health`);
-});
+}); 
 //test// CORS fix wildcard approach
