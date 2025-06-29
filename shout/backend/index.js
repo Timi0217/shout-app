@@ -1,51 +1,33 @@
 const express = require('express');
-const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const allowedOrigins = [
-  'https://joinshout.fyi',
-  'https://www.joinshout.fyi',
-  'http://localhost:3000'
-];
-
-// Enhanced CORS configuration - MUST BE FIRST
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
-}));
-
-// Handle preflight requests for ALL routes
-app.options('*', cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
-}));
+// Simple but effective CORS setup
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  console.log('Request from origin:', origin);
+  // Allow all joinshout.fyi variations and localhost
+  if (origin && (origin.includes('joinshout.fyi') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    console.log('Handling preflight for:', req.url);
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(express.json());
 
-// Catch-all logger
+// Logging middleware
 app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.originalUrl}`);
-  console.log('Headers:', req.headers);
+  console.log(`[${req.method}] ${req.originalUrl} from ${req.headers.origin}`);
   next();
 });
 
@@ -66,6 +48,7 @@ app.get('/test', (req, res) => {
 });
 
 app.get('/sessions', (req, res) => {
+  console.log('GET /sessions called');
   res.json({ 
     status: 'success', 
     sessions: ['test-session'],
@@ -76,11 +59,10 @@ app.get('/sessions', (req, res) => {
 app.post('/sessions', (req, res) => {
   console.log('POST /sessions hit');
   console.log('Request body:', req.body);
-  console.log('Request headers:', req.headers);
+  console.log('Origin:', req.headers.origin);
   try {
-    // Process the request
     const { dj_id, venue_name, status } = req.body;
-    // Generate a mock session ID for now
+    // Generate session ID
     const sessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const session = {
       id: sessionId,
@@ -107,12 +89,11 @@ app.post('/sessions', (req, res) => {
   }
 });
 
-// Verification endpoint
 app.post('/verify', (req, res) => {
   console.log('POST /verify hit');
   console.log('Request body:', req.body);
   const { code } = req.body;
-  // Mock verification - accept any 6-digit code
+  // Accept any 6-digit code for testing
   if (code && code.length === 6) {
     res.json({
       success: true,
@@ -128,7 +109,6 @@ app.post('/verify', (req, res) => {
   }
 });
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -139,7 +119,7 @@ app.get('/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🎵 SHOUT Backend listening on port ${PORT}`);
-  console.log(`🚀 CORS enabled for: https://joinshout.fyi and https://www.joinshout.fyi`);
+  console.log(`🚀 CORS enabled for all joinshout.fyi variations`);
   console.log(`📊 Health check: /health`);
 });
-//test// force redeploy
+//test// force redeploy 2
