@@ -95,17 +95,6 @@ export async function sendOTP(phone_number) {
   return res.json();
 }
 
-export async function verifyOTP(phone_number, code) {
-  const res = await fetch(`${API_URL}/auth/verify-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone_number, code }),
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('Invalid code');
-  return res.json();
-}
-
 export async function removeSongRequest({ session_id, request_id, user_id }) {
   const res = await fetch(`${API_URL}/sessions/${session_id}/requests/${request_id}`, {
     method: 'DELETE',
