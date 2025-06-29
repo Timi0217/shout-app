@@ -3,13 +3,17 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// SIMPLE CORS - no credentials needed
+// SIMPLE CORS - echo origin for joinshout.fyi, wildcard for others
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   // Log for debugging
   console.log('Request from origin:', origin);
-  // Simple CORS without credentials
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Handle both www and non-www versions
+  if (origin && origin.includes('joinshout.fyi')) {
+    res.setHeader('Access-Control-Allow-Origin', origin); // Use the exact origin
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Fallback wildcard
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
   res.setHeader('Access-Control-Max-Age', '86400');
