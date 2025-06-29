@@ -87,26 +87,6 @@ app.post('/sessions', (req, res) => {
   }
 });
 
-app.post('/verify', (req, res) => {
-  console.log('POST /verify hit');
-  console.log('Request body:', req.body);
-  const { code } = req.body;
-  // Accept any 6-digit code for testing
-  if (code && code.length === 6) {
-    res.json({
-      success: true,
-      message: 'Code verified successfully',
-      verified: true
-    });
-  } else {
-    res.status(400).json({
-      success: false,
-      message: 'Invalid verification code',
-      verified: false
-    });
-  }
-});
-
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
