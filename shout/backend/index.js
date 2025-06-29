@@ -110,6 +110,14 @@ async function getSessionIdFromCode(session_code) {
   return result.rows[0].session_id;
 }
 
+// Helper to send full error details in API responses
+function sendFullError(res, err, fallback) {
+  res.status(500).json({
+    error: err.message || fallback,
+    stack: err.stack || null
+  });
+}
+
 // --- SONG REQUEST QUEUE ENDPOINTS ---
 // Get song queue for a session
 app.get('/sessions/:session_id/requests', async (req, res) => {
@@ -122,7 +130,7 @@ app.get('/sessions/:session_id/requests', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to fetch queue' });
+    sendFullError(res, err, 'Failed to fetch queue');
   }
 });
 
@@ -138,7 +146,7 @@ app.post('/sessions/:session_id/requests', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to add song request' });
+    sendFullError(res, err, 'Failed to add song request');
   }
 });
 
@@ -151,7 +159,7 @@ app.delete('/sessions/:session_id/requests/:request_id', async (req, res) => {
     await db.query('DELETE FROM requests WHERE request_id = $1', [request_id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to remove song request' });
+    sendFullError(res, err, 'Failed to remove song request');
   }
 });
 
@@ -165,7 +173,7 @@ app.post('/requests/:request_id/upvote', async (req, res) => {
     await db.query('INSERT INTO votes (request_id, user_id, vote_type) VALUES ($1, $2, $3)', [request_id, user_id, 'upvote']);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to upvote' });
+    sendFullError(res, err, 'Failed to upvote');
   }
 });
 
@@ -178,7 +186,7 @@ app.post('/requests/:request_id/downvote', async (req, res) => {
     await db.query('INSERT INTO votes (request_id, user_id, vote_type) VALUES ($1, $2, $3)', [request_id, user_id, 'downvote']);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to downvote' });
+    sendFullError(res, err, 'Failed to downvote');
   }
 });
 
@@ -189,7 +197,7 @@ app.get('/sessions/:session_id/add-usage/:user_id', async (req, res) => {
     await getSessionIdFromCode(session_code); // for validation
     res.json({ adds_left: 3, add_reset_seconds: 0 });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to get add usage' });
+    sendFullError(res, err, 'Failed to get add usage');
   }
 });
 app.get('/sessions/:session_id/vote-usage/:user_id', async (req, res) => {
@@ -198,7 +206,7 @@ app.get('/sessions/:session_id/vote-usage/:user_id', async (req, res) => {
     await getSessionIdFromCode(session_code); // for validation
     res.json({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to get vote usage' });
+    sendFullError(res, err, 'Failed to get vote usage');
   }
 });
 
@@ -210,7 +218,7 @@ app.get('/spotify/search', async (req, res) => {
     const data = await spotifySearch(q);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Spotify search failed' });
+    sendFullError(res, err, 'Spotify search failed');
   }
 });
 
