@@ -69,27 +69,46 @@ export default function SessionScreen({ route, navigation }) {
 
   // Timer to update vote cooldown every second if at limit
   useEffect(() => {
-    if (voteUsage.upvote_reset_seconds > 0 || voteUsage.downvote_reset_seconds > 0) {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    // Only start timer if on cooldown
+    if (
+      (voteUsage.upvotes_left === 0 && voteUsage.upvote_reset_seconds > 0) ||
+      (voteUsage.downvotes_left === 0 && voteUsage.downvote_reset_seconds > 0)
+    ) {
       timerRef.current = setInterval(() => {
         fetchVoteUsage();
       }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
     }
-    return () => clearInterval(timerRef.current);
-  }, [voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [voteUsage.upvotes_left, voteUsage.downvotes_left, voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
 
   // Timer to update add-song cooldown every second if at limit
   useEffect(() => {
-    if (addUsage.add_reset_seconds > 0) {
+    if (addTimerRef.current) {
+      clearInterval(addTimerRef.current);
+      addTimerRef.current = null;
+    }
+    // Only start timer if on cooldown
+    if (addUsage.adds_left === 0 && addUsage.add_reset_seconds > 0) {
       addTimerRef.current = setInterval(() => {
         fetchAddUsage();
       }, 1000);
-    } else if (addTimerRef.current) {
-      clearInterval(addTimerRef.current);
     }
-    return () => clearInterval(addTimerRef.current);
-  }, [addUsage.add_reset_seconds]);
+    return () => {
+      if (addTimerRef.current) {
+        clearInterval(addTimerRef.current);
+        addTimerRef.current = null;
+      }
+    };
+  }, [addUsage.adds_left, addUsage.add_reset_seconds]);
 
   // Add this useEffect to always fetch cooldown state after login or session change
   useEffect(() => {
