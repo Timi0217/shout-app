@@ -293,6 +293,24 @@ app.get('/spotify/search', async (req, res) => {
   }
 });
 
+// Join session by code (for frontend join flow)
+app.get('/sessions/:session_code', async (req, res) => {
+  try {
+    const { session_code } = req.params;
+    console.log('Looking for session:', session_code);
+    const result = await db.query('SELECT * FROM sessions WHERE session_code = $1', [session_code]);
+    console.log('Query result:', result.rows);
+    if (result.rows.length === 0) {
+      console.log('No session found with code:', session_code);
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Session lookup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🎵 SHOUT Backend listening on port ${PORT}`);
   console.log(`🚀 CORS enabled for ALL origins (debugging mode)`);
