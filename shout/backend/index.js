@@ -321,30 +321,40 @@ app.get('/sessions/:session_code', async (req, res) => {
   }
 });
 
-// Join session and increment crowd if user is new
+// Join session and recalculate crowd count based on unique users
 app.post('/sessions/:session_code/join', async (req, res) => {
   try {
     const { session_code } = req.params;
     const { user_id } = req.body;
 
-    // Get session_id from code
+    // Get session ID
     const sessionResult = await db.query('SELECT session_id FROM sessions WHERE session_code = $1', [session_code]);
     if (sessionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
     const session_id = sessionResult.rows[0].session_id;
 
-    // Check if this user has already joined (by checking requests table)
-    const alreadyJoined = await db.query(
-      'SELECT COUNT(*) as count FROM requests WHERE session_id = $1 AND user_id = $2',
-      [session_id, user_id]
-    );
-    if (parseInt(alreadyJoined.rows[0].count) === 0) {
-      // Increment crowd count
-      await db.query('UPDATE sessions SET crowd = crowd + 1 WHERE session_id = $1', [session_id]);
-    }
+    // Count unique users who have done ANYTHING in this session (add, vote, or just joined)
+    const uniqueUsersResult = await db.query(`
+      SELECT COUNT(DISTINCT user_id) as unique_count FROM (
+        SELECT user_id FROM requests WHERE session_id = $1
+        UNION
+        SELECT user_id FROM votes v 
+        JOIN requests r ON v.request_id = r.request_id 
+        WHERE r.session_id = $1
+        UNION
+        SELECT $2 as user_id  -- Include the current joining user
+      ) as all_users
+    `, [session_id, user_id]);
 
-    res.json({ success: true });
+    const uniqueCount = parseInt(uniqueUsersResult.rows[0].unique_count);
+
+    // Update crowd count to reflect actual unique users
+    await db.query('UPDATE sessions SET crowd = $1 WHERE session_id = $2', [uniqueCount, session_id]);
+
+    // Return updated session
+    const updatedSession = await db.query('SELECT * FROM sessions WHERE session_code = $1', [session_code]);
+    res.json(updatedSession.rows[0]);
   } catch (error) {
     console.error('Join session error:', error);
     res.status(500).json({ error: error.message });
