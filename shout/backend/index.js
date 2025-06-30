@@ -65,11 +65,11 @@ app.get('/sessions', (req, res) => {
 
 app.post('/sessions', async (req, res) => {
   try {
-    const { dj_id, venue_name, status } = req.body;
+    const { dj_id, status } = req.body;
     const session_code = generateSessionCode ? generateSessionCode(6) : Math.random().toString(36).substring(2, 8).toUpperCase();
     const result = await db.query(
-      'INSERT INTO sessions (dj_id, venue_name, status, session_code) VALUES ($1, $2, $3, $4) RETURNING *',
-      [dj_id, venue_name || '', status || 'live', session_code]
+      'INSERT INTO sessions (dj_id, status, session_code) VALUES ($1, $2, $3) RETURNING *',
+      [dj_id, status || 'live', session_code]
     );
     const session = result.rows[0];
     res.json({
