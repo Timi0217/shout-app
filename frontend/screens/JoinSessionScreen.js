@@ -19,7 +19,7 @@ export default function JoinSessionScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      const session = await joinSession(sessionCode);
+      const session = await joinSession(sessionCode, user?.id);
       navigation.navigate('Session', { session });
     } catch (err) {
       setError('Session not found');

@@ -10,10 +10,19 @@ export async function createSession({ dj_id, venue_name, status }) {
   return res.json();
 }
 
-export async function joinSession(session_code) {
+export async function joinSession(session_code, user_id) {
   const res = await fetch(`${API_URL}/sessions/${session_code}`);
   if (!res.ok) throw new Error('Session not found');
-  return res.json();
+  const sessionData = await res.json();
+  // Call join endpoint to increment crowd
+  if (user_id) {
+    await fetch(`${API_URL}/sessions/${session_code}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id })
+    });
+  }
+  return sessionData;
 }
 
 export async function searchSpotify(query) {

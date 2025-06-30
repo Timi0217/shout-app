@@ -163,6 +163,12 @@ app.post('/sessions/:session_id/requests', async (req, res) => {
     const session_code = req.params.session_id;
     const session_id = await getSessionIdFromCode(session_code);
     const { song_title, artist, user_id } = req.body;
+    // Check if this user has made any requests in this session before
+    const existingRequests = await db.query(
+      'SELECT COUNT(*) as count FROM requests WHERE session_id = $1 AND user_id = $2',
+      [session_id, user_id]
+    );
+    const isFirstRequest = parseInt(existingRequests.rows[0].count) === 0;
     const usage = getOrInitUsage(session_id, user_id);
     usage.adds = pruneUsage(usage.adds);
     if (usage.adds.length >= ADD_LIMIT) {
@@ -173,6 +179,10 @@ app.post('/sessions/:session_id/requests', async (req, res) => {
       'INSERT INTO requests (session_id, user_id, song_title, artist) VALUES ($1, $2, $3, $4) RETURNING *',
       [session_id, user_id, song_title, artist]
     );
+    // Increment crowd count for first-time users
+    if (isFirstRequest) {
+      await db.query('UPDATE sessions SET crowd = crowd + 1 WHERE session_id = $1', [session_id]);
+    }
     res.json(result.rows[0]);
   } catch (err) {
     sendFullError(res, err, 'Failed to add song request');
@@ -307,6 +317,36 @@ app.get('/sessions/:session_code', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Session lookup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Join session and increment crowd if user is new
+app.post('/sessions/:session_code/join', async (req, res) => {
+  try {
+    const { session_code } = req.params;
+    const { user_id } = req.body;
+
+    // Get session_id from code
+    const sessionResult = await db.query('SELECT session_id FROM sessions WHERE session_code = $1', [session_code]);
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    const session_id = sessionResult.rows[0].session_id;
+
+    // Check if this user has already joined (by checking requests table)
+    const alreadyJoined = await db.query(
+      'SELECT COUNT(*) as count FROM requests WHERE session_id = $1 AND user_id = $2',
+      [session_id, user_id]
+    );
+    if (parseInt(alreadyJoined.rows[0].count) === 0) {
+      // Increment crowd count
+      await db.query('UPDATE sessions SET crowd = crowd + 1 WHERE session_id = $1', [session_id]);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Join session error:', error);
     res.status(500).json({ error: error.message });
   }
 });
