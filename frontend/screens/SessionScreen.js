@@ -59,46 +59,108 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   useEffect(() => {
+    let interval;
+    let unsubscribe;
+
+    const refreshData = async (showLoader = false) => {
+      if (!session?.session_code) return;
+      if (showLoader) setIsRefreshing(true);
+      try {
+        // Refresh session info
+        const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}`);
+        if (sessionResponse.ok) {
+          const updatedSession = await sessionResponse.json();
+          setLiveSession(updatedSession);
+        }
+        // Refresh queue
+        await fetchQueue();
+        // Refresh usage data
+        if (user?.id) {
+          await fetchVoteUsage();
+          await fetchAddUsage();
+        }
+        setLastUpdateTime(Date.now());
+        if (showLoader) console.log('Pull to refresh completed');
+      } catch (err) {
+        console.error('Refresh failed:', err);
+      } finally {
+        if (showLoader) setIsRefreshing(false);
+      }
+    };
+
     // Initial load
-    refreshAllSessionData();
+    refreshData();
 
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => refreshAllSessionData(), 30000);
+    // Auto-refresh every 15 seconds (mobile-friendly)
+    interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      refreshData();
+    }, 15000);
 
-    // Refresh on screen focus
-    const unsubscribe = navigation.addListener('focus', () => {
-      refreshAllSessionData(true);
+    // Refresh on focus
+    unsubscribe = navigation.addListener('focus', () => {
+      refreshData(true);
     });
 
-    return () => {
-      clearInterval(interval);
-      unsubscribe();
-    };
-  }, [navigation, session?.session_code]);
-
-  // Smart refresh function
-  const refreshAllSessionData = async (showLoader = false) => {
-    if (!session?.session_code) return;
-    if (showLoader) setIsRefreshing(true);
-    try {
-      // Refresh session info
-      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}`);
-      if (sessionResponse.ok) {
-        const updatedSession = await sessionResponse.json();
-        setLiveSession(updatedSession);
+    // Page visibility change handler (mobile optimization)
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        refreshData();
       }
-      // Refresh queue (use fetchQueue, which updates queue state)
-      await fetchQueue();
-      // Refresh usage data
-      await fetchVoteUsage();
-      await fetchAddUsage();
-      setLastUpdateTime(Date.now());
-    } catch (err) {
-      console.error('Failed to refresh session data:', err);
-    } finally {
-      if (showLoader) setIsRefreshing(false);
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-  };
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (unsubscribe) unsubscribe();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+  }, [navigation, session?.session_code, user?.id]);
+
+  // Timer for vote cooldowns
+  useEffect(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (
+      (voteUsage.upvotes_left === 0 && voteUsage.upvote_reset_seconds > 0) ||
+      (voteUsage.downvotes_left === 0 && voteUsage.downvote_reset_seconds > 0)
+    ) {
+      timerRef.current = setInterval(() => {
+        fetchVoteUsage();
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [voteUsage.upvotes_left, voteUsage.downvotes_left, voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
+
+  // Timer for add cooldowns
+  useEffect(() => {
+    if (addTimerRef.current) {
+      clearInterval(addTimerRef.current);
+      addTimerRef.current = null;
+    }
+    if (addUsage.adds_left === 0 && addUsage.add_reset_seconds > 0) {
+      addTimerRef.current = setInterval(() => {
+        fetchAddUsage();
+      }, 1000);
+    }
+    return () => {
+      if (addTimerRef.current) {
+        clearInterval(addTimerRef.current);
+        addTimerRef.current = null;
+      }
+    };
+  }, [addUsage.adds_left, addUsage.add_reset_seconds]);
 
   // Toast for new song added
   const previousQueueLength = useRef(queue.length);
