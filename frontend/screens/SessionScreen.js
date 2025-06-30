@@ -269,28 +269,19 @@ export default function SessionScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <View>
-          {/* Header, stats, and cards */}
-          <View style={{ height: 24 }} />
+          {/* Session Code Card - prominent at the top */}
           <View style={styles.cardContainer}>
             <View style={styles.card}>
-              <View style={styles.sessionInfoRow}>
-                <Text style={styles.sessionIdLabel}>Session Code:</Text>
-                <Text style={styles.sessionCode}>{session.session_code}</Text>
+              <View style={[styles.sessionInfoRow, { justifyContent: 'center', marginBottom: 8 }]}> 
+                <Text style={[styles.sessionIdLabel, { fontSize: 20 }]}>Session Code:</Text>
+                <Text style={[styles.sessionCode, { fontSize: 28, marginLeft: 10 }]}>{session.session_code}</Text>
                 <View style={styles.statusDot} />
               </View>
             </View>
           </View>
+          {/* Stats Card - improved layout */}
           <View style={styles.cardContainer}>
-            <View style={styles.card}>
-              <View style={styles.sessionInfoRow}>
-                <Text style={styles.sessionIdLabel}>ID:</Text>
-                <Text style={styles.sessionCode}>{session.session_code}</Text>
-                <View style={styles.statusDot} />
-              </View>
-            </View>
-          </View>
-          <View style={styles.cardContainer}>
-            <View style={styles.limitsCardRowFixed}>
+            <View style={[styles.limitsCardRowFixed, { flexWrap: 'wrap', alignItems: 'flex-end' }]}> 
               <View style={styles.limitItemFixed}>
                 <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Adds</Text>
                 <Text style={styles.limitValue}>{user ? addUsage.adds_left : '-'}</Text>
