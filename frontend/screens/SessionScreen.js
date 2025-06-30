@@ -29,7 +29,7 @@ export default function SessionScreen({ route, navigation }) {
     if (!session) return;
     setQueueLoading(true);
     try {
-      const data = await getSessionQueue(session.session_id);
+      const data = await getSessionQueue(session.session_code);
       setQueue(data);
     } catch (err) {}
     setQueueLoading(false);
@@ -38,7 +38,7 @@ export default function SessionScreen({ route, navigation }) {
   const fetchVoteUsage = async () => {
     if (!session || !user?.id) return;
     try {
-      const usage = await getVoteUsage(session.session_id, user.id);
+      const usage = await getVoteUsage(session.session_code, user.id);
       setVoteUsage(usage);
     } catch (err) {
       setVoteUsage({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
@@ -48,7 +48,7 @@ export default function SessionScreen({ route, navigation }) {
   const fetchAddUsage = async () => {
     if (!session || !user?.id) return;
     try {
-      const usage = await getAddUsage(session.session_id, user.id);
+      const usage = await getAddUsage(session.session_code, user.id);
       setAddUsage(usage);
     } catch (err) {
       setAddUsage({ adds_left: 3, add_reset_seconds: 0 });
@@ -147,7 +147,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     try {
       await addSongRequest({
-        session_id: session.session_id,
+        session_id: session.session_code,
         song_title: track.name,
         artist: track.artists.map(a => a.name).join(', '),
         user_id: user.id,
@@ -198,7 +198,7 @@ export default function SessionScreen({ route, navigation }) {
 
   const handleRemove = async (request_id) => {
     try {
-      await removeSongRequest({ session_id: session.session_id, request_id, user_id: user.id });
+      await removeSongRequest({ session_id: session.session_code, request_id, user_id: user.id });
       fetchQueue();
       fetchVoteUsage();
       fetchAddUsage();
