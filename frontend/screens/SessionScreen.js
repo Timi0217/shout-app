@@ -256,6 +256,10 @@ export default function SessionScreen({ route, navigation }) {
     );
   }
 
+  // Debug: log session object and route params
+  console.log('Route params:', route.params);
+  console.log('Session from params:', session);
+
   // Main FlatList data: just the queue, but use header/footer for all other content
   return (
     <KeyboardAvoidingView
@@ -274,7 +278,9 @@ export default function SessionScreen({ route, navigation }) {
             <View style={styles.card}>
               <View style={[styles.sessionInfoRow, { justifyContent: 'center', marginBottom: 8 }]}> 
                 <Text style={[styles.sessionIdLabel, { fontSize: 20 }]}>ID:</Text>
-                <Text style={[styles.sessionCode, { fontSize: 28, marginLeft: 10 }]}>{session.session_code}</Text>
+                <Text style={[styles.sessionCode, { fontSize: 28, marginLeft: 10 }]}> 
+                  {session?.session_code || session?.session_id || session?.code || session?.id || 'NO CODE'}
+                </Text>
                 <View style={styles.statusDot} />
               </View>
             </View>
