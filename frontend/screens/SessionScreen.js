@@ -25,7 +25,6 @@ export default function SessionScreen({ route, navigation }) {
   const [showQueueFade, setShowQueueFade] = useState(false);
   const queueListRef = useRef();
   const [liveSession, setLiveSession] = useState(session);
-  const [liveQueue, setLiveQueue] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
@@ -143,17 +142,13 @@ export default function SessionScreen({ route, navigation }) {
     if (showLoader) setIsRefreshing(true);
     try {
       // Refresh session info
-      const updatedSession = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}`).then(r => r.json());
-      setLiveSession(updatedSession);
-      // Refresh queue
-      const oldQueueLength = liveQueue.length;
-      const queueRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}/requests`);
-      const newQueue = queueRes.ok ? await queueRes.json() : [];
-      setLiveQueue(newQueue);
-      // Show toast if new song added
-      if (oldQueueLength && newQueue.length > oldQueueLength) {
-        ToastAndroid.show('New song added!', ToastAndroid.SHORT);
+      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}`);
+      if (sessionResponse.ok) {
+        const updatedSession = await sessionResponse.json();
+        setLiveSession(updatedSession);
       }
+      // Refresh queue (use fetchQueue, which updates queue state)
+      await fetchQueue();
       // Refresh usage data
       await fetchVoteUsage();
       await fetchAddUsage();
@@ -165,10 +160,21 @@ export default function SessionScreen({ route, navigation }) {
     }
   };
 
-  // Auto-refresh every 15s, and on screen focus
+  // Toast for new song added
+  const previousQueueLength = useRef(queue.length);
+  useEffect(() => {
+    if (queue.length > previousQueueLength.current && previousQueueLength.current > 0) {
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('New song added!', ToastAndroid.SHORT);
+      }
+    }
+    previousQueueLength.current = queue.length;
+  }, [queue.length]);
+
+  // Auto-refresh every 30s, and on screen focus
   useEffect(() => {
     refreshAllSessionData();
-    const interval = setInterval(() => refreshAllSessionData(), 15000);
+    const interval = setInterval(() => refreshAllSessionData(), 30000);
     const unsubscribe = navigation.addListener('focus', () => {
       refreshAllSessionData(true);
     });
@@ -176,7 +182,7 @@ export default function SessionScreen({ route, navigation }) {
       clearInterval(interval);
       unsubscribe();
     };
-  }, [navigation, session]);
+  }, [navigation, session?.session_code]);
 
   const handleSearch = async (text) => {
     setQuery(text);
@@ -421,7 +427,7 @@ export default function SessionScreen({ route, navigation }) {
               </View>
               <View style={styles.limitItemFixed}>
                 <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Songs</Text>
-                <Text style={styles.limitValue}>{liveQueue.length}</Text>
+                <Text style={styles.limitValue}>{queue.length}</Text>
                 <View style={{ height: 22 }} />
               </View>
               <View style={styles.limitItemFixed}>
@@ -439,7 +445,7 @@ export default function SessionScreen({ route, navigation }) {
           <View style={styles.cardContainer}>
             <View style={styles.queueCardFullBlack}>
               <FlatList
-                data={liveQueue}
+                data={queue}
                 keyExtractor={item => item.request_id?.toString()}
                 renderItem={({ item }) => (
                   user && user.id === session.dj_id ? (
