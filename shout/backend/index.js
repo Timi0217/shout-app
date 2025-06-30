@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('./db');
 const { spotifySearch } = require('./spotify');
+const generateSessionCode = require('./sessionCode');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -62,35 +63,28 @@ app.get('/sessions', (req, res) => {
   });
 });
 
-app.post('/sessions', (req, res) => {
-  console.log('POST /sessions hit');
-  console.log('Request body:', req.body);
-  console.log('Origin:', req.headers.origin);
+app.post('/sessions', async (req, res) => {
   try {
     const { dj_id, venue_name, status } = req.body;
-    // Generate session ID
-    const sessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const session = {
-      id: sessionId,
-      dj_id: dj_id,
-      venue_name: venue_name,
-      status: status || 'live',
-      created_at: new Date().toISOString(),
-      session_code: sessionId
-    };
-    console.log('Created session:', session);
-    res.json({ 
-      status: 'created', 
+    const session_code = generateSessionCode ? generateSessionCode(6) : Math.random().toString(36).substring(2, 8).toUpperCase();
+    const result = await db.query(
+      'INSERT INTO sessions (dj_id, venue_name, status, session_code) VALUES ($1, $2, $3, $4) RETURNING *',
+      [dj_id, venue_name || '', status || 'live', session_code]
+    );
+    const session = result.rows[0];
+    res.json({
+      status: 'created',
       success: true,
-      session: session,
-      session_id: sessionId
+      session,
+      session_id: session.session_code // for compatibility with frontend
     });
   } catch (error) {
     console.error('Session creation error:', error);
     res.status(500).json({
       status: 'error',
       success: false,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
   }
 });
