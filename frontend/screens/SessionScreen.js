@@ -117,6 +117,12 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleAdd = async (track) => {
+    console.log('=== DEBUG ADD SONG ===');
+    console.log('Session:', session);
+    console.log('User:', user);
+    console.log('Session DJ ID:', session?.dj_id);
+    console.log('Current User ID:', user?.id);
+    console.log('Are they the same?', session?.dj_id === user?.id);
     if (!session) {
       Alert.alert('Error', 'No session found');
       return;
