@@ -112,6 +112,35 @@ function sendFullError(res, err, fallback) {
   });
 }
 
+// In-memory usage tracking (for demo; use Redis or DB for production)
+const usageStore = {};
+const ADD_LIMIT = 3;
+const UPVOTE_LIMIT = 3;
+const DOWNVOTE_LIMIT = 1;
+const COOLDOWN_SECONDS = 60 * 5; // 5 minutes
+
+function getUsageKey(session_id, user_id) {
+  return `${session_id}:${user_id}`;
+}
+
+function getOrInitUsage(session_id, user_id) {
+  const key = getUsageKey(session_id, user_id);
+  if (!usageStore[key]) {
+    usageStore[key] = {
+      adds: [], // timestamps
+      upvotes: [],
+      downvotes: [],
+    };
+  }
+  return usageStore[key];
+}
+
+// Helper to clean up old timestamps
+function pruneUsage(arr) {
+  const now = Date.now();
+  return arr.filter(ts => now - ts < COOLDOWN_SECONDS * 1000);
+}
+
 // --- SONG REQUEST QUEUE ENDPOINTS ---
 // Get song queue for a session
 app.get('/sessions/:session_id/requests', async (req, res) => {
@@ -134,6 +163,12 @@ app.post('/sessions/:session_id/requests', async (req, res) => {
     const session_code = req.params.session_id;
     const session_id = await getSessionIdFromCode(session_code);
     const { song_title, artist, user_id } = req.body;
+    const usage = getOrInitUsage(session_id, user_id);
+    usage.adds = pruneUsage(usage.adds);
+    if (usage.adds.length >= ADD_LIMIT) {
+      return res.status(429).json({ error: 'Add limit reached. Please wait for cooldown.' });
+    }
+    usage.adds.push(Date.now());
     const result = await db.query(
       'INSERT INTO requests (session_id, user_id, song_title, artist) VALUES ($1, $2, $3, $4) RETURNING *',
       [session_id, user_id, song_title, artist]
@@ -163,6 +198,16 @@ app.post('/requests/:request_id/upvote', async (req, res) => {
   try {
     const { request_id } = req.params;
     const { user_id } = req.body;
+    // Find session_id for this request
+    const result = await db.query('SELECT session_id FROM requests WHERE request_id = $1', [request_id]);
+    if (result.rows.length === 0) throw new Error('Request not found');
+    const session_id = result.rows[0].session_id;
+    const usage = getOrInitUsage(session_id, user_id);
+    usage.upvotes = pruneUsage(usage.upvotes);
+    if (usage.upvotes.length >= UPVOTE_LIMIT) {
+      return res.status(429).json({ error: 'Upvote limit reached. Please wait for cooldown.' });
+    }
+    usage.upvotes.push(Date.now());
     await db.query('UPDATE requests SET vote_count = vote_count + 1 WHERE request_id = $1', [request_id]);
     await db.query('INSERT INTO votes (request_id, user_id, vote_type) VALUES ($1, $2, $3)', [request_id, user_id, 'upvote']);
     res.json({ success: true });
@@ -176,6 +221,16 @@ app.post('/requests/:request_id/downvote', async (req, res) => {
   try {
     const { request_id } = req.params;
     const { user_id } = req.body;
+    // Find session_id for this request
+    const result = await db.query('SELECT session_id FROM requests WHERE request_id = $1', [request_id]);
+    if (result.rows.length === 0) throw new Error('Request not found');
+    const session_id = result.rows[0].session_id;
+    const usage = getOrInitUsage(session_id, user_id);
+    usage.downvotes = pruneUsage(usage.downvotes);
+    if (usage.downvotes.length >= DOWNVOTE_LIMIT) {
+      return res.status(429).json({ error: 'Downvote limit reached. Please wait for cooldown.' });
+    }
+    usage.downvotes.push(Date.now());
     await db.query('UPDATE requests SET vote_count = vote_count - 1 WHERE request_id = $1', [request_id]);
     await db.query('INSERT INTO votes (request_id, user_id, vote_type) VALUES ($1, $2, $3)', [request_id, user_id, 'downvote']);
     res.json({ success: true });
@@ -188,8 +243,16 @@ app.post('/requests/:request_id/downvote', async (req, res) => {
 app.get('/sessions/:session_id/add-usage/:user_id', async (req, res) => {
   try {
     const session_code = req.params.session_id;
-    await getSessionIdFromCode(session_code); // for validation
-    res.json({ adds_left: 3, add_reset_seconds: 0 });
+    const user_id = req.params.user_id;
+    const session_id = await getSessionIdFromCode(session_code);
+    const usage = getOrInitUsage(session_id, user_id);
+    usage.adds = pruneUsage(usage.adds);
+    const adds_left = Math.max(0, ADD_LIMIT - usage.adds.length);
+    let add_reset_seconds = 0;
+    if (usage.adds.length >= ADD_LIMIT) {
+      add_reset_seconds = Math.ceil((usage.adds[0] + COOLDOWN_SECONDS * 1000 - Date.now()) / 1000);
+    }
+    res.json({ adds_left, add_reset_seconds });
   } catch (err) {
     sendFullError(res, err, 'Failed to get add usage');
   }
@@ -197,8 +260,22 @@ app.get('/sessions/:session_id/add-usage/:user_id', async (req, res) => {
 app.get('/sessions/:session_id/vote-usage/:user_id', async (req, res) => {
   try {
     const session_code = req.params.session_id;
-    await getSessionIdFromCode(session_code); // for validation
-    res.json({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
+    const user_id = req.params.user_id;
+    const session_id = await getSessionIdFromCode(session_code);
+    const usage = getOrInitUsage(session_id, user_id);
+    usage.upvotes = pruneUsage(usage.upvotes);
+    usage.downvotes = pruneUsage(usage.downvotes);
+    const upvotes_left = Math.max(0, UPVOTE_LIMIT - usage.upvotes.length);
+    const downvotes_left = Math.max(0, DOWNVOTE_LIMIT - usage.downvotes.length);
+    let upvote_reset_seconds = 0;
+    let downvote_reset_seconds = 0;
+    if (usage.upvotes.length >= UPVOTE_LIMIT) {
+      upvote_reset_seconds = Math.ceil((usage.upvotes[0] + COOLDOWN_SECONDS * 1000 - Date.now()) / 1000);
+    }
+    if (usage.downvotes.length >= DOWNVOTE_LIMIT) {
+      downvote_reset_seconds = Math.ceil((usage.downvotes[0] + COOLDOWN_SECONDS * 1000 - Date.now()) / 1000);
+    }
+    res.json({ upvotes_left, downvotes_left, upvote_reset_seconds, downvote_reset_seconds });
   } catch (err) {
     sendFullError(res, err, 'Failed to get vote usage');
   }

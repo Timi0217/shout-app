@@ -274,6 +274,15 @@ export default function SessionScreen({ route, navigation }) {
           <View style={styles.cardContainer}>
             <View style={styles.card}>
               <View style={styles.sessionInfoRow}>
+                <Text style={styles.sessionIdLabel}>Session Code:</Text>
+                <Text style={styles.sessionCode}>{session.session_code}</Text>
+                <View style={styles.statusDot} />
+              </View>
+            </View>
+          </View>
+          <View style={styles.cardContainer}>
+            <View style={styles.card}>
+              <View style={styles.sessionInfoRow}>
                 <Text style={styles.sessionIdLabel}>ID:</Text>
                 <Text style={styles.sessionCode}>{session.session_code}</Text>
                 <View style={styles.statusDot} />
