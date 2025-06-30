@@ -19,8 +19,22 @@ export default function JoinSessionScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      const session = await joinSession(sessionCode, user?.id);
-      navigation.navigate('Session', { session });
+      // First, get the session data
+      const session = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionCode}`).then(r => r.json());
+      // Then call the join endpoint to update crowd count and get updated session
+      let updatedSession = session;
+      if (user?.id) {
+        console.log('Calling join endpoint for user:', user.id);
+        const joinRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionCode}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id })
+        });
+        if (joinRes.ok) {
+          updatedSession = await joinRes.json();
+        }
+      }
+      navigation.navigate('Session', { session: updatedSession });
     } catch (err) {
       setError('Session not found');
     }
