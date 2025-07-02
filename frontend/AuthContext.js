@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { supabase } from './supabase';
 
 const AuthContext = createContext();
 
@@ -7,10 +8,19 @@ export function AuthProvider({ children }) {
   const [user, setUserState] = useState(null);
 
   useEffect(() => {
-    // Restore user on app launch
-    SecureStore.getItemAsync('user').then(storedUser => {
-      if (storedUser) setUserState(JSON.parse(storedUser));
-    });
+    // Restore user from Supabase session on app launch/refresh
+    const restoreSession = async () => {
+      // For Supabase JS v2, use getUser
+      const { data: { user: supaUser } } = await supabase.auth.getUser();
+      if (supaUser) {
+        setUserState(supaUser);
+        await SecureStore.setItemAsync('user', JSON.stringify(supaUser));
+      } else {
+        setUserState(null);
+        await SecureStore.deleteItemAsync('user');
+      }
+    };
+    restoreSession();
   }, []);
 
   const setUser = async (userObj) => {
@@ -26,6 +36,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setUserState(null);
     await SecureStore.deleteItemAsync('user');
+    await supabase.auth.signOut(); // Also sign out from Supabase
   };
 
   return (
