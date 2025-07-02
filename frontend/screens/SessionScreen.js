@@ -472,7 +472,7 @@ export default function SessionScreen({ route, navigation }) {
                           </View>
                           {isOwnRequest ? (
                             <View style={styles.ownRequestLabelContainer}>
-                              <Text style={styles.ownRequestLabel}>Your Request</Text>
+                              <Text style={styles.ownRequestLabel} numberOfLines={1} ellipsizeMode="tail">Your Request</Text>
                             </View>
                           ) : (
                             <View style={styles.voteArrowGroupBlack}>
@@ -508,7 +508,7 @@ export default function SessionScreen({ route, navigation }) {
                         </View>
                         {isOwnRequest ? (
                           <View style={styles.ownRequestLabelContainer}>
-                            <Text style={styles.ownRequestLabel}>Your Request</Text>
+                            <Text style={styles.ownRequestLabel} numberOfLines={1} ellipsizeMode="tail">Your Request</Text>
                           </View>
                         ) : (
                           <View style={styles.voteArrowGroupBlack}>
@@ -1068,7 +1068,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    width: 88,
+    width: 100,
     height: 36,
   },
   ownRequestLabel: {
