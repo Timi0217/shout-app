@@ -21,6 +21,7 @@ const linking = {
   config: {
     screens: {
       CreateOrJoin: '',
+      JoinSession: 'JoinSession',
       Session: 'sessions/:session_code',
       PhoneLogin: 'login',
     },
