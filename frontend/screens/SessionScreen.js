@@ -15,7 +15,7 @@ export default function SessionScreen({ route, navigation }) {
   const { user, logout } = useAuth();
   
   // State management
-  const [session, setSession] = useState(initialSession);
+  const [session, setSession] = useState(initialSession || null);
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -30,7 +30,7 @@ export default function SessionScreen({ route, navigation }) {
   });
   const [addUsage, setAddUsage] = useState({ adds_left: 3, add_reset_seconds: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sessionRestored, setSessionRestored] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const timerRef = useRef();
   const addTimerRef = useRef();
@@ -39,6 +39,7 @@ export default function SessionScreen({ route, navigation }) {
   const [liveSession, setLiveSession] = useState(session);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const searchInputRef = useRef();
+  const hasTriedRestore = useRef(false);
 
   // Get session ID consistently
   const getSessionId = (sessionObj) => {
@@ -46,47 +47,99 @@ export default function SessionScreen({ route, navigation }) {
     return sessionObj.session_code || sessionObj.session_id || sessionObj.code || sessionObj.id;
   };
 
-  // Helper to save session to SecureStore
-  const persistSession = async (sessionObj) => {
-    if (sessionObj) {
-      try {
-        await SecureStore.setItemAsync('currentSession', JSON.stringify(sessionObj));
-      } catch (error) {
-        console.error('Error saving session:', error);
+  // Initialize session - either from params or storage
+  useEffect(() => {
+    const initializeSession = async () => {
+      console.log('🚀 Initializing session...');
+      console.log('Initial session from params:', initialSession ? getSessionId(initialSession) : 'none');
+      
+      if (initialSession) {
+        // We have a session from navigation, use it
+        console.log('✅ Using session from navigation params');
+        setSession(initialSession);
+        
+        // Save it to storage for future use
+        try {
+          await SecureStore.setItemAsync('currentSession', JSON.stringify(initialSession));
+          console.log('💾 Session saved to storage');
+        } catch (error) {
+          console.error('❌ Error saving session:', error);
+        }
+        
+        setIsInitialized(true);
+        return;
       }
-    }
-  };
 
-  // Always persist session after join/create
-  useEffect(() => {
-    if (session) {
-      persistSession(session);
-    }
-  }, [session]);
-
-  // Session restoration - restore session if missing
-  useEffect(() => {
-    if (route.params?.session && !sessionRestored) {
-      setSession(route.params.session);
-      setSessionRestored(true);
-      return;
-    }
-    if (!route.params?.session && !session && !sessionRestored) {
-      // Try to restore from SecureStore
-      const restoreSession = async () => {
+      // No session from params, try to restore from storage
+      if (!hasTriedRestore.current) {
+        console.log('🔍 No session from params, checking storage...');
+        hasTriedRestore.current = true;
+        
         try {
           const storedSession = await SecureStore.getItemAsync('currentSession');
           if (storedSession) {
-            setSession(JSON.parse(storedSession));
+            const parsedSession = JSON.parse(storedSession);
+            const sessionId = getSessionId(parsedSession);
+            console.log('📱 Found stored session:', sessionId);
+            
+            // Verify session is still valid
+            try {
+              const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionId}`);
+              
+              if (response.ok) {
+                const updatedSession = await response.json();
+                console.log('✅ Session verified and updated');
+                setSession(updatedSession);
+                setIsInitialized(true);
+                return;
+              } else {
+                console.log('❌ Session no longer exists');
+                await SecureStore.deleteItemAsync('currentSession');
+              }
+            } catch (fetchError) {
+              console.error('❌ Error verifying session:', fetchError);
+              // Use stored session anyway if verification fails
+              console.log('🔄 Using stored session despite verification error');
+              setSession(parsedSession);
+              setIsInitialized(true);
+              return;
+            }
+          } else {
+            console.log('❌ No stored session found');
           }
-        } catch (e) {
-          // handle error
+        } catch (error) {
+          console.error('❌ Error restoring session:', error);
         }
-        setSessionRestored(true);
-      };
-      restoreSession();
+        
+        // No valid session found, redirect to join screen
+        console.log('🔄 Redirecting to CreateOrJoin');
+        navigation.replace('CreateOrJoin');
+        setIsInitialized(true);
+      }
+    };
+
+    if (!isInitialized) {
+      initializeSession();
     }
-  }, [route.params?.session, session, sessionRestored]);
+  }, [initialSession, isInitialized, navigation]);
+
+  // Save session whenever it changes
+  useEffect(() => {
+    const saveSession = async () => {
+      if (session) {
+        try {
+          await SecureStore.setItemAsync('currentSession', JSON.stringify(session));
+          console.log('💾 Session updated in storage:', getSessionId(session));
+        } catch (error) {
+          console.error('❌ Error updating session in storage:', error);
+        }
+      }
+    };
+    
+    if (session && isInitialized) {
+      saveSession();
+    }
+  }, [session, isInitialized]);
 
   // Data fetching functions
   const fetchQueue = async () => {
@@ -377,7 +430,7 @@ export default function SessionScreen({ route, navigation }) {
   }, [navigation, logout, user]);
 
   // Show loading if session is being restored
-  if (!session || !sessionRestored) {
+  if (!session || !isInitialized) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
