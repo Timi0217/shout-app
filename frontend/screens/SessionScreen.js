@@ -30,7 +30,9 @@ export default function SessionScreen({ route, navigation }) {
   });
   const [addUsage, setAddUsage] = useState({ adds_left: 3, add_reset_seconds: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreTried, setRestoreTried] = useState(false);
+  const searchInputRef = useRef();
   
   const timerRef = useRef();
   const addTimerRef = useRef();
@@ -38,8 +40,6 @@ export default function SessionScreen({ route, navigation }) {
   const queueListRef = useRef();
   const [liveSession, setLiveSession] = useState(session);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
-  const searchInputRef = useRef();
-  const hasTriedRestore = useRef(false);
 
   // Get session ID consistently
   const getSessionId = (sessionObj) => {
@@ -47,99 +47,53 @@ export default function SessionScreen({ route, navigation }) {
     return sessionObj.session_code || sessionObj.session_id || sessionObj.code || sessionObj.id;
   };
 
-  // Initialize session - either from params or storage
+  // Restore session from storage if no param
   useEffect(() => {
-    const initializeSession = async () => {
-      console.log('🚀 Initializing session...');
-      console.log('Initial session from params:', initialSession ? getSessionId(initialSession) : 'none');
-      
-      if (initialSession) {
-        // We have a session from navigation, use it
-        console.log('✅ Using session from navigation params');
-        setSession(initialSession);
-        
-        // Save it to storage for future use
-        try {
-          await SecureStore.setItemAsync('currentSession', JSON.stringify(initialSession));
-          console.log('💾 Session saved to storage');
-        } catch (error) {
-          console.error('❌ Error saving session:', error);
-        }
-        
-        setIsInitialized(true);
-        return;
-      }
-
-      // No session from params, try to restore from storage
-      if (!hasTriedRestore.current) {
-        console.log('🔍 No session from params, checking storage...');
-        hasTriedRestore.current = true;
-        
+    if (!session && !restoreTried) {
+      setRestoring(true);
+      (async () => {
         try {
           const storedSession = await SecureStore.getItemAsync('currentSession');
           if (storedSession) {
-            const parsedSession = JSON.parse(storedSession);
-            const sessionId = getSessionId(parsedSession);
-            console.log('📱 Found stored session:', sessionId);
-            
-            // Verify session is still valid
-            try {
-              const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionId}`);
-              
-              if (response.ok) {
-                const updatedSession = await response.json();
-                console.log('✅ Session verified and updated');
-                setSession(updatedSession);
-                setIsInitialized(true);
-                return;
-              } else {
-                console.log('❌ Session no longer exists');
-                await SecureStore.deleteItemAsync('currentSession');
-              }
-            } catch (fetchError) {
-              console.error('❌ Error verifying session:', fetchError);
-              // Use stored session anyway if verification fails
-              console.log('🔄 Using stored session despite verification error');
-              setSession(parsedSession);
-              setIsInitialized(true);
-              return;
-            }
-          } else {
-            console.log('❌ No stored session found');
+            setSession(JSON.parse(storedSession));
           }
-        } catch (error) {
-          console.error('❌ Error restoring session:', error);
+        } catch (e) {
+          // ignore
         }
-        
-        // No valid session found, redirect to join screen
-        console.log('🔄 Redirecting to CreateOrJoin');
-        navigation.replace('CreateOrJoin');
-        setIsInitialized(true);
-      }
-    };
-
-    if (!isInitialized) {
-      initializeSession();
+        setRestoring(false);
+        setRestoreTried(true);
+      })();
     }
-  }, [initialSession, isInitialized, navigation]);
+  }, [session, restoreTried]);
 
   // Save session whenever it changes
   useEffect(() => {
-    const saveSession = async () => {
-      if (session) {
-        try {
-          await SecureStore.setItemAsync('currentSession', JSON.stringify(session));
-          console.log('💾 Session updated in storage:', getSessionId(session));
-        } catch (error) {
-          console.error('❌ Error updating session in storage:', error);
-        }
-      }
-    };
-    
-    if (session && isInitialized) {
-      saveSession();
+    if (session) {
+      SecureStore.setItemAsync('currentSession', JSON.stringify(session));
     }
-  }, [session, isInitialized]);
+  }, [session]);
+
+  // Show loading only while restoring from storage
+  if (!session && restoring) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}> 
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading session...</Text>
+      </View>
+    );
+  }
+
+  // If no session after restore, show error and go back
+  if (!session && restoreTried) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}> 
+        <Text style={styles.loadingText}>No session found</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('CreateOrJoin')} style={{ marginTop: 24, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}>
+          <Text style={{ color: colors.buttonText, fontWeight: 'bold' }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Data fetching functions
   const fetchQueue = async () => {
@@ -428,28 +382,6 @@ export default function SessionScreen({ route, navigation }) {
       ),
     });
   }, [navigation, logout, user]);
-
-  // Show loading ONLY while initializing
-  if (!isInitialized) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center' }]}> 
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading session...</Text>
-      </View>
-    );
-  }
-
-  // If no session after initialization, show error or redirect
-  if (!session) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center' }]}> 
-        <Text style={styles.loadingText}>No session found</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('CreateOrJoin')} style={{ marginTop: 24, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}>
-          <Text style={{ color: colors.buttonText, fontWeight: 'bold' }}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   const sessionId = getSessionId(session);
 
