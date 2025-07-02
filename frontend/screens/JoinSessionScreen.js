@@ -21,7 +21,7 @@ export default function JoinSessionScreen({ navigation }) {
     try {
       const code = sessionCode.trim().toUpperCase();
       const session = await joinSession(code, user?.id);
-      navigation.navigate('Session', { session_code: code });
+      navigation.navigate('Session', { session_code: code, session });
     } catch (err) {
       setError('Session not found');
     }

@@ -11,11 +11,12 @@ import * as SecureStore from 'expo-secure-store';
 const BUTTON_RADIUS = 18; // Match Create/Join buttons
 
 export default function SessionScreen({ route, navigation }) {
+  const initialSession = route.params?.session;
   const initialSessionCode = route.params?.session_code;
   const { user, logout } = useAuth();
   
   // State management
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState(initialSession || null);
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -48,9 +49,9 @@ export default function SessionScreen({ route, navigation }) {
     return sessionObj.session_code || sessionObj.code;
   };
 
-  // Restore session from storage if no session_code param
+  // Restore session from storage if no session_code param and no initialSession
   useEffect(() => {
-    if (!initialSessionCode && !restoreTried) {
+    if (!initialSession && !initialSessionCode && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
@@ -58,7 +59,7 @@ export default function SessionScreen({ route, navigation }) {
           if (storedSession) {
             const parsed = JSON.parse(storedSession);
             setSession(parsed);
-            console.log('✅ Session restored:', parsed.session_code || parsed.session_id || parsed.code || parsed.id);
+            console.log('✅ Session restored:', parsed.session_code || parsed.code);
           } else {
             console.log('❌ No stored session found');
           }
@@ -73,7 +74,7 @@ export default function SessionScreen({ route, navigation }) {
 
   // Fetch session from backend if session_code param is present and session is not loaded
   useEffect(() => {
-    if (initialSessionCode && !session && !restoring && !restoreTried) {
+    if (!initialSession && initialSessionCode && !session && !restoring && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
@@ -95,7 +96,7 @@ export default function SessionScreen({ route, navigation }) {
         setRestoreTried(true);
       })();
     }
-  }, [initialSessionCode, session, restoring, restoreTried]);
+  }, [initialSession, initialSessionCode, session, restoring, restoreTried]);
 
   // Save session whenever it changes
   useEffect(() => {
