@@ -158,8 +158,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 74 : 50,
-    right: 24,
+    top: 40,
+    right: 20,
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 8,
