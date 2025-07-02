@@ -66,23 +66,27 @@ export default function SessionScreen({ route, navigation }) {
 
   // Session restoration - restore session if missing
   useEffect(() => {
-    // Only run restoration if there is NO session and not already restored
-    if (session || sessionRestored) return;
-    const restoreSession = async () => {
-      try {
-        const storedSession = await SecureStore.getItemAsync('currentSession');
-        if (storedSession) {
-          const parsedSession = JSON.parse(storedSession);
-          setSession(parsedSession);
-          // Optionally: verify session is still valid with backend here
-        }
-      } catch (error) {
-        console.error('Error restoring session:', error);
-      }
+    if (route.params?.session && !sessionRestored) {
+      setSession(route.params.session);
       setSessionRestored(true);
-    };
-    restoreSession();
-  }, [session, sessionRestored]);
+      return;
+    }
+    if (!route.params?.session && !session && !sessionRestored) {
+      // Try to restore from SecureStore
+      const restoreSession = async () => {
+        try {
+          const storedSession = await SecureStore.getItemAsync('currentSession');
+          if (storedSession) {
+            setSession(JSON.parse(storedSession));
+          }
+        } catch (e) {
+          // handle error
+        }
+        setSessionRestored(true);
+      };
+      restoreSession();
+    }
+  }, [route.params?.session, session, sessionRestored]);
 
   // Data fetching functions
   const fetchQueue = async () => {
