@@ -38,6 +38,7 @@ export default function SessionScreen({ route, navigation }) {
   const queueListRef = useRef();
   const [liveSession, setLiveSession] = useState(session);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const searchInputRef = useRef();
 
   // Get session ID consistently
   const getSessionId = (sessionObj) => {
@@ -45,19 +46,21 @@ export default function SessionScreen({ route, navigation }) {
     return sessionObj.session_code || sessionObj.session_id || sessionObj.code || sessionObj.id;
   };
 
-  // Session persistence - save session when it changes
-  useEffect(() => {
-    const saveSession = async () => {
-      if (session) {
-        try {
-          await SecureStore.setItemAsync('currentSession', JSON.stringify(session));
-        } catch (error) {
-          console.error('Error saving session:', error);
-        }
+  // Helper to save session to SecureStore
+  const persistSession = async (sessionObj) => {
+    if (sessionObj) {
+      try {
+        await SecureStore.setItemAsync('currentSession', JSON.stringify(sessionObj));
+      } catch (error) {
+        console.error('Error saving session:', error);
       }
-    };
+    }
+  };
+
+  // Always persist session after join/create
+  useEffect(() => {
     if (session) {
-      saveSession();
+      persistSession(session);
     }
   }, [session]);
 
@@ -409,6 +412,16 @@ export default function SessionScreen({ route, navigation }) {
   console.log('Route params:', route.params);
   console.log('Session from params:', session);
 
+  // Clear results and blur input when out of adds
+  useEffect(() => {
+    if (addUsage.adds_left === 0) {
+      setResults([]);
+      if (searchInputRef.current && searchInputRef.current.blur) {
+        searchInputRef.current.blur();
+      }
+    }
+  }, [addUsage.adds_left]);
+
   // Main FlatList data: just the queue, but use header/footer for all other content
   return (
     <KeyboardAvoidingView
@@ -619,6 +632,7 @@ export default function SessionScreen({ route, navigation }) {
                 )}
               </View>
               <TextInput
+                ref={searchInputRef}
                 style={styles.searchBar}
                 placeholder="Search songs, artists"
                 placeholderTextColor={colors.gray}
