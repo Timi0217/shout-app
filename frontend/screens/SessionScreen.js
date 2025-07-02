@@ -49,22 +49,26 @@ export default function SessionScreen({ route, navigation }) {
 
   // Restore session from storage if no param
   useEffect(() => {
-    if (!session && !restoreTried) {
+    if (!initialSession && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
           const storedSession = await SecureStore.getItemAsync('currentSession');
           if (storedSession) {
-            setSession(JSON.parse(storedSession));
+            const parsed = JSON.parse(storedSession);
+            setSession(parsed);
+            console.log('✅ Session restored:', parsed.session_code || parsed.session_id || parsed.code || parsed.id);
+          } else {
+            console.log('❌ No stored session found');
           }
         } catch (e) {
-          // ignore
+          console.error('❌ Session restore failed:', e);
         }
         setRestoring(false);
         setRestoreTried(true);
       })();
     }
-  }, [session, restoreTried]);
+  }, [initialSession, restoreTried]);
 
   // Save session whenever it changes
   useEffect(() => {
@@ -73,8 +77,8 @@ export default function SessionScreen({ route, navigation }) {
     }
   }, [session]);
 
-  // Show loading only while restoring from storage
-  if (!session && restoring) {
+  // Show loading while restoring
+  if (!session && !restoreTried) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}> 
         <ActivityIndicator size="large" color={colors.primary} />
@@ -83,13 +87,16 @@ export default function SessionScreen({ route, navigation }) {
     );
   }
 
-  // If no session after restore, show error and go back
-  if (!session && restoreTried) {
+  // Only show 'Session expired' after restore attempt completes AND fails
+  if (!session && restoreTried && !restoring) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}> 
-        <Text style={styles.loadingText}>No session found</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('CreateOrJoin')} style={{ marginTop: 24, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}>
-          <Text style={{ color: colors.buttonText, fontWeight: 'bold' }}>Go Back</Text>
+        <Text style={styles.loadingText}>Session expired</Text>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('CreateOrJoin')} 
+          style={{ marginTop: 24, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}
+        >
+          <Text style={{ color: colors.buttonText, fontWeight: 'bold' }}>Join New Session</Text>
         </TouchableOpacity>
       </View>
     );
