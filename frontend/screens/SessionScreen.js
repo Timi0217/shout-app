@@ -11,9 +11,8 @@ import * as SecureStore from 'expo-secure-store';
 const BUTTON_RADIUS = 18; // Match Create/Join buttons
 
 export default function SessionScreen({ route, navigation }) {
-  // Hybrid: use session from params if present, else fetch by code
+  // Ground zero: use session from params only
   const initialSession = route.params?.session || null;
-  const initialSessionCode = route.params?.session_code;
   const { user, logout } = useAuth();
   
   // State management
@@ -44,15 +43,9 @@ export default function SessionScreen({ route, navigation }) {
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const sessionIdRef = useRef();
 
-  // Get session code consistently
-  const getSessionCode = (sessionObj) => {
-    if (!sessionObj) return null;
-    return sessionObj.session_code || sessionObj.code;
-  };
-
-  // Restore session from storage if no session_code param and no initialSession
+  // Restore session from storage if no session param
   useEffect(() => {
-    if (!initialSession && !initialSessionCode && !restoreTried) {
+    if (!initialSession && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
@@ -72,39 +65,6 @@ export default function SessionScreen({ route, navigation }) {
       })();
     }
   }, []); // Run once only
-
-  // Fetch session from backend if session_code param is present and session is not loaded
-  useEffect(() => {
-    if (!initialSession && initialSessionCode && !session && !restoring && !restoreTried) {
-      setRestoring(true);
-      (async () => {
-        try {
-          const code = initialSessionCode;
-          const response = await fetch(
-            `${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${code}`
-          );
-          if (response.ok) {
-            const sessionObj = await response.json();
-            setSession(sessionObj);
-            await SecureStore.setItemAsync('currentSession', JSON.stringify(sessionObj));
-          } else {
-            setSession(null);
-          }
-        } catch (e) {
-          setSession(null);
-        }
-        setRestoring(false);
-        setRestoreTried(true);
-      })();
-    }
-  }, [initialSession, initialSessionCode, session, restoring, restoreTried]);
-
-  // Save session whenever it changes
-  useEffect(() => {
-    if (session) {
-      SecureStore.setItemAsync('currentSession', JSON.stringify(session));
-    }
-  }, [session]);
 
   // Show loading while restoring
   if (!session && !restoreTried) {
@@ -133,7 +93,7 @@ export default function SessionScreen({ route, navigation }) {
 
   // Data fetching functions
   const fetchQueue = async () => {
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     if (!sessionCode) return;
     setQueueLoading(true);
     try {
@@ -146,7 +106,7 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const fetchVoteUsage = async () => {
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     if (!sessionCode || !user?.id) return;
     try {
       const usage = await getVoteUsage(sessionCode, user.id);
@@ -162,7 +122,7 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const fetchAddUsage = async () => {
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     if (!sessionCode || !user?.id) return;
     try {
       const usage = await getAddUsage(sessionCode, user.id);
@@ -174,7 +134,7 @@ export default function SessionScreen({ route, navigation }) {
 
   // Refresh all session data
   const refreshAllSessionData = async (showLoader = false) => {
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     if (!sessionCode) return;
     if (showLoader) setIsRefreshing(true);
     try {
@@ -204,7 +164,7 @@ export default function SessionScreen({ route, navigation }) {
   // Data fetching effect - prevent infinite loop
   useEffect(() => {
     if (!session) return;
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     if (!sessionCode) return;
     // Only run if session ID actually changed
     if (sessionIdRef.current === sessionCode) return;
@@ -298,7 +258,7 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleAdd = async (track) => {
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     if (!sessionCode) {
       Alert.alert('Error', 'No session found');
       return;
@@ -369,7 +329,7 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleRemove = async (request_id) => {
-    const sessionCode = getSessionCode(session);
+    const sessionCode = session?.session_code || session?.code;
     try {
       await removeSongRequest({ session_code: sessionCode, request_id, user_id: user.id });
       await Promise.all([fetchQueue(), fetchVoteUsage(), fetchAddUsage()]);
@@ -429,7 +389,7 @@ export default function SessionScreen({ route, navigation }) {
     });
   }, [navigation, logout, user]);
 
-  const sessionCode = getSessionCode(session);
+  const sessionCode = session?.session_code || session?.code;
 
   // Debug: log session object and route params
   console.log('Route params:', route.params);
