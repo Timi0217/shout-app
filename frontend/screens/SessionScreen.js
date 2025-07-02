@@ -40,6 +40,7 @@ export default function SessionScreen({ route, navigation }) {
   const queueListRef = useRef();
   const [liveSession, setLiveSession] = useState(session);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const sessionIdRef = useRef();
 
   // Get session ID consistently
   const getSessionId = (sessionObj) => {
@@ -177,6 +178,9 @@ export default function SessionScreen({ route, navigation }) {
     if (!session) return;
     const sessionId = getSessionId(session);
     if (!sessionId) return;
+    // Only run if session ID actually changed
+    if (sessionIdRef.current === sessionId) return;
+    sessionIdRef.current = sessionId;
     refreshAllSessionData();
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
@@ -189,7 +193,7 @@ export default function SessionScreen({ route, navigation }) {
       clearInterval(interval);
       unsubscribe();
     };
-  }, [navigation, user?.id]); // Removed session from dependencies
+  }, [navigation, user?.id, session]); // Add session back but use ref to control
 
   // Timer for vote cooldowns
   useEffect(() => {
