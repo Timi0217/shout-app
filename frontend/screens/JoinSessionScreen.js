@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 18,
     marginLeft: 8,
+    marginRight: 16,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,

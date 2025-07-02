@@ -374,7 +374,7 @@ export default function SessionScreen({ route, navigation }) {
           </View>
           {/* Stats Card - improved layout and shorter labels */}
           <View style={styles.cardContainer}>
-            <View style={[styles.limitsCardRowFixed, { flexWrap: 'wrap', alignItems: 'flex-end' }]}> 
+            <View style={styles.limitsCardRowFixed}> 
               <View style={styles.limitItemFixed}>
                 <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Add</Text>
                 <Text style={styles.limitValue}>{user ? addUsage.adds_left : '-'}</Text>
@@ -653,30 +653,21 @@ const styles = StyleSheet.create({
   },
   limitsCardRowFixed: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'nowrap',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    marginBottom: 18,
-    marginTop: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 1,
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 0,
+    marginTop: 0,
+    paddingHorizontal: 0,
   },
   limitItemFixed: {
     flex: 1,
-    minWidth: 75,
-    minHeight: 62,
-    marginHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'column',
-    display: 'flex',
-    height: 62,
+    minWidth: 0,
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
   },
   limitLabel: {
     fontSize: 12,
@@ -1006,6 +997,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     minWidth: 88,
     marginLeft: 8,
+    marginRight: 16,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
