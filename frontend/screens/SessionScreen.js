@@ -11,7 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 const BUTTON_RADIUS = 18; // Match Create/Join buttons
 
 export default function SessionScreen({ route, navigation }) {
-  // Ground zero: use session from params only
+  // True ground zero: only use session from params
   const initialSession = route.params?.session || null;
   const { user, logout } = useAuth();
   
@@ -42,54 +42,6 @@ export default function SessionScreen({ route, navigation }) {
   const [liveSession, setLiveSession] = useState(session);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const sessionIdRef = useRef();
-
-  // Restore session from storage if no session param
-  useEffect(() => {
-    if (!initialSession && !restoreTried) {
-      setRestoring(true);
-      (async () => {
-        try {
-          const storedSession = await SecureStore.getItemAsync('currentSession');
-          if (storedSession) {
-            const parsed = JSON.parse(storedSession);
-            setSession(parsed);
-            console.log('✅ Session restored:', parsed.session_code || parsed.code);
-          } else {
-            console.log('❌ No stored session found');
-          }
-        } catch (e) {
-          console.error('❌ Session restore failed:', e);
-        }
-        setRestoring(false);
-        setRestoreTried(true);
-      })();
-    }
-  }, []); // Run once only
-
-  // Show loading while restoring
-  if (!session && !restoreTried) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center' }]}> 
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading session...</Text>
-      </View>
-    );
-  }
-
-  // Only show 'Session expired' after restore attempt completes AND fails
-  if (!session && restoreTried && !restoring) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center' }]}> 
-        <Text style={styles.loadingText}>Session expired</Text>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('CreateOrJoin')} 
-          style={{ marginTop: 24, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}
-        >
-          <Text style={{ color: colors.buttonText, fontWeight: 'bold' }}>Join New Session</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   // Data fetching functions
   const fetchQueue = async () => {
@@ -160,28 +112,6 @@ export default function SessionScreen({ route, navigation }) {
       if (showLoader) setIsRefreshing(false);
     }
   };
-
-  // Data fetching effect - prevent infinite loop
-  useEffect(() => {
-    if (!session) return;
-    const sessionCode = session?.session_code || session?.code;
-    if (!sessionCode) return;
-    // Only run if session ID actually changed
-    if (sessionIdRef.current === sessionCode) return;
-    sessionIdRef.current = sessionCode;
-    refreshAllSessionData();
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && document.hidden) return;
-      refreshAllSessionData();
-    }, 15000);
-    const unsubscribe = navigation.addListener('focus', () => {
-      refreshAllSessionData(true);
-    });
-    return () => {
-      clearInterval(interval);
-      unsubscribe();
-    };
-  }, [navigation, user?.id, session]); // Add session back but use ref to control
 
   // Timer for vote cooldowns
   useEffect(() => {
