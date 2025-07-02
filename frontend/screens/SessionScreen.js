@@ -42,10 +42,10 @@ export default function SessionScreen({ route, navigation }) {
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const sessionIdRef = useRef();
 
-  // Get session ID consistently
-  const getSessionId = (sessionObj) => {
+  // Get session code consistently
+  const getSessionCode = (sessionObj) => {
     if (!sessionObj) return null;
-    return sessionObj.session_code || sessionObj.session_id || sessionObj.code || sessionObj.id;
+    return sessionObj.session_code || sessionObj.code;
   };
 
   // Restore session from storage if no session_code param
@@ -131,11 +131,11 @@ export default function SessionScreen({ route, navigation }) {
 
   // Data fetching functions
   const fetchQueue = async () => {
-    const sessionId = getSessionId(session);
-    if (!sessionId) return;
+    const sessionCode = getSessionCode(session);
+    if (!sessionCode) return;
     setQueueLoading(true);
     try {
-      const data = await getSessionQueue(sessionId);
+      const data = await getSessionQueue(sessionCode);
       setQueue(data || []);
     } catch (err) {
       setQueue([]);
@@ -144,10 +144,10 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const fetchVoteUsage = async () => {
-    const sessionId = getSessionId(session);
-    if (!sessionId || !user?.id) return;
+    const sessionCode = getSessionCode(session);
+    if (!sessionCode || !user?.id) return;
     try {
-      const usage = await getVoteUsage(sessionId, user.id);
+      const usage = await getVoteUsage(sessionCode, user.id);
       setVoteUsage(usage);
     } catch (err) {
       setVoteUsage({ 
@@ -160,10 +160,10 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const fetchAddUsage = async () => {
-    const sessionId = getSessionId(session);
-    if (!sessionId || !user?.id) return;
+    const sessionCode = getSessionCode(session);
+    if (!sessionCode || !user?.id) return;
     try {
-      const usage = await getAddUsage(sessionId, user.id);
+      const usage = await getAddUsage(sessionCode, user.id);
       setAddUsage(usage);
     } catch (err) {
       setAddUsage({ adds_left: 3, add_reset_seconds: 0 });
@@ -172,12 +172,12 @@ export default function SessionScreen({ route, navigation }) {
 
   // Refresh all session data
   const refreshAllSessionData = async (showLoader = false) => {
-    const sessionId = getSessionId(session);
-    if (!sessionId) return;
+    const sessionCode = getSessionCode(session);
+    if (!sessionCode) return;
     if (showLoader) setIsRefreshing(true);
     try {
       // Refresh session info
-      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionId}`);
+      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionCode}`);
       if (sessionResponse.ok) {
         const updatedSession = await sessionResponse.json();
         // ✅ Only update if meaningfully different
@@ -202,11 +202,11 @@ export default function SessionScreen({ route, navigation }) {
   // Data fetching effect - prevent infinite loop
   useEffect(() => {
     if (!session) return;
-    const sessionId = getSessionId(session);
-    if (!sessionId) return;
+    const sessionCode = getSessionCode(session);
+    if (!sessionCode) return;
     // Only run if session ID actually changed
-    if (sessionIdRef.current === sessionId) return;
-    sessionIdRef.current = sessionId;
+    if (sessionIdRef.current === sessionCode) return;
+    sessionIdRef.current = sessionCode;
     refreshAllSessionData();
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
@@ -296,8 +296,8 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleAdd = async (track) => {
-    const sessionId = getSessionId(session);
-    if (!sessionId) {
+    const sessionCode = getSessionCode(session);
+    if (!sessionCode) {
       Alert.alert('Error', 'No session found');
       return;
     }
@@ -320,7 +320,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     try {
       await addSongRequest({
-        session_id: sessionId,
+        session_code: sessionCode,
         song_title: track.name,
         artist: track.artists.map(a => a.name).join(', '),
         user_id: user.id,
@@ -367,9 +367,9 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleRemove = async (request_id) => {
-    const sessionId = getSessionId(session);
+    const sessionCode = getSessionCode(session);
     try {
-      await removeSongRequest({ session_id: sessionId, request_id, user_id: user.id });
+      await removeSongRequest({ session_code: sessionCode, request_id, user_id: user.id });
       await Promise.all([fetchQueue(), fetchVoteUsage(), fetchAddUsage()]);
     } catch (err) {
       Alert.alert('Remove Error', err.message);
@@ -427,7 +427,7 @@ export default function SessionScreen({ route, navigation }) {
     });
   }, [navigation, logout, user]);
 
-  const sessionId = getSessionId(session);
+  const sessionCode = getSessionCode(session);
 
   // Debug: log session object and route params
   console.log('Route params:', route.params);
@@ -469,7 +469,7 @@ export default function SessionScreen({ route, navigation }) {
               <View style={[styles.sessionInfoRow, { justifyContent: 'center', marginBottom: 8 }]}> 
                 <Text style={[styles.sessionIdLabel, { fontSize: 20 }]}>ID:</Text>
                 <Text style={[styles.sessionCode, { fontSize: 28, marginLeft: 10 }]}> 
-                  {session?.session_code || session?.session_id || session?.code || session?.id || 'NO CODE'}
+                  {sessionCode || 'NO CODE'}
                 </Text>
                 <View style={styles.statusDot} />
               </View>

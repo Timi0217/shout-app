@@ -34,7 +34,7 @@ export default function JoinSessionScreen({ navigation }) {
           updatedSession = await joinRes.json();
         }
       }
-      navigation.navigate('Session', { session_code: updatedSession.session_code || updatedSession.session_id });
+      navigation.navigate('Session', { session_code: updatedSession.session_code });
     } catch (err) {
       setError('Session not found');
     }

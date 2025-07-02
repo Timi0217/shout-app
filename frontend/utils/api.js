@@ -31,25 +31,25 @@ export async function searchSpotify(query) {
   return res.json();
 }
 
-export async function getAddUsage(session_id, user_id) {
-  const res = await fetch(`${API_URL}/sessions/${session_id}/add-usage/${user_id}`);
-  if (!res.ok) throw new Error('Failed to fetch add usage');
+export async function getAddUsage(session_code, user_id) {
+  const res = await fetch(`${API_URL}/sessions/${session_code}/add-usage/${user_id}`);
+  if (!res.ok) throw new Error('Failed to get add usage');
   return res.json();
 }
 
-export async function addSongRequest({ session_id, song_title, artist, user_id }) {
-  const res = await fetch(`${API_URL}/sessions/${session_id}/requests`, {
+export async function addSongRequest({ session_code, song_title, artist, user_id }) {
+  const res = await fetch(`${API_URL}/sessions/${session_code}/requests`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ song_title, artist, user_id })
   });
-  if (!res.ok) throw new Error((await res.json()).error || 'Failed to add song request');
+  if (!res.ok) throw new Error('Failed to add song request');
   return res.json();
 }
 
-export async function getSessionQueue(session_id) {
-  const res = await fetch(`${API_URL}/sessions/${session_id}/requests`);
-  if (!res.ok) throw new Error('Failed to fetch session queue');
+export async function getSessionQueue(session_code) {
+  const res = await fetch(`${API_URL}/sessions/${session_code}/requests`);
+  if (!res.ok) throw new Error('Failed to get session queue');
   return res.json();
 }
 
@@ -73,9 +73,9 @@ export async function downvoteRequest(request_id, user_id) {
   return res.json();
 }
 
-export async function getVoteUsage(session_id, user_id) {
-  const res = await fetch(`${API_URL}/sessions/${session_id}/vote-usage/${user_id}`);
-  if (!res.ok) throw new Error('Failed to fetch vote usage');
+export async function getVoteUsage(session_code, user_id) {
+  const res = await fetch(`${API_URL}/sessions/${session_code}/vote-usage/${user_id}`);
+  if (!res.ok) throw new Error('Failed to get vote usage');
   return res.json();
 }
 
@@ -89,12 +89,12 @@ export async function sendOTP(phone_number) {
   return res.json();
 }
 
-export async function removeSongRequest({ session_id, request_id, user_id }) {
-  const res = await fetch(`${API_URL}/sessions/${session_id}/requests/${request_id}`, {
+export async function removeSongRequest({ session_code, request_id, user_id }) {
+  const res = await fetch(`${API_URL}/sessions/${session_code}/requests/${request_id}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id })
   });
-  if (!res.ok) throw new Error((await res.json()).error || 'Failed to remove song request');
+  if (!res.ok) throw new Error('Failed to remove song request');
   return res.json();
 } 
