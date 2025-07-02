@@ -68,7 +68,7 @@ export default function SessionScreen({ route, navigation }) {
         setRestoreTried(true);
       })();
     }
-  }, [initialSession, restoreTried]);
+  }, []); // Run once only
 
   // Save session whenever it changes
   useEffect(() => {
@@ -153,7 +153,12 @@ export default function SessionScreen({ route, navigation }) {
       const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionId}`);
       if (sessionResponse.ok) {
         const updatedSession = await sessionResponse.json();
-        setSession(updatedSession);
+        // ✅ Only update if meaningfully different
+        const currentSessionStr = JSON.stringify(session);
+        const updatedSessionStr = JSON.stringify(updatedSession);
+        if (currentSessionStr !== updatedSessionStr) {
+          setSession(updatedSession);
+        }
       }
       // Refresh all data
       await Promise.all([
@@ -167,9 +172,11 @@ export default function SessionScreen({ route, navigation }) {
     }
   };
 
-  // Initial data load and auto-refresh
+  // Data fetching effect - prevent infinite loop
   useEffect(() => {
     if (!session) return;
+    const sessionId = getSessionId(session);
+    if (!sessionId) return;
     refreshAllSessionData();
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
@@ -182,7 +189,7 @@ export default function SessionScreen({ route, navigation }) {
       clearInterval(interval);
       unsubscribe();
     };
-  }, [navigation, session, user?.id]);
+  }, [navigation, user?.id]); // Removed session from dependencies
 
   // Timer for vote cooldowns
   useEffect(() => {
