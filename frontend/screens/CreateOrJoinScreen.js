@@ -200,6 +200,6 @@ const styles = StyleSheet.create({
   buttonGroup: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 40, // buffer above the footer
+    marginBottom: 64, // increased buffer above the footer
   },
 }); 
