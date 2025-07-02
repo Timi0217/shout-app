@@ -99,7 +99,8 @@ app.get('/health', (req, res) => {
 
 // Helper to get integer session_id from session_code
 async function getSessionIdFromCode(session_code) {
-  const result = await db.query('SELECT session_id FROM sessions WHERE session_code = $1', [session_code]);
+  const code = session_code.toUpperCase();
+  const result = await db.query('SELECT session_id FROM sessions WHERE session_code = $1', [code]);
   if (result.rows.length === 0) throw new Error('Session not found');
   return result.rows[0].session_id;
 }
@@ -145,7 +146,7 @@ function pruneUsage(arr) {
 // Get song queue for a session
 app.get('/sessions/:session_id/requests', async (req, res) => {
   try {
-    const session_code = req.params.session_id;
+    const session_code = req.params.session_id.toUpperCase();
     const session_id = await getSessionIdFromCode(session_code);
     const result = await db.query(
       'SELECT * FROM requests WHERE session_id = $1 ORDER BY vote_count DESC, timestamp ASC',
@@ -160,7 +161,7 @@ app.get('/sessions/:session_id/requests', async (req, res) => {
 // Add a song request to a session
 app.post('/sessions/:session_id/requests', async (req, res) => {
   try {
-    const session_code = req.params.session_id;
+    const session_code = req.params.session_id.toUpperCase();
     const session_id = await getSessionIdFromCode(session_code);
     const { song_title, artist, user_id } = req.body;
     // Check if this user has made any requests in this session before
@@ -192,7 +193,7 @@ app.post('/sessions/:session_id/requests', async (req, res) => {
 // Remove a song request
 app.delete('/sessions/:session_id/requests/:request_id', async (req, res) => {
   try {
-    const session_code = req.params.session_id;
+    const session_code = req.params.session_id.toUpperCase();
     const session_id = await getSessionIdFromCode(session_code); // for validation, not used in query
     const { request_id } = req.params;
     await db.query('DELETE FROM requests WHERE request_id = $1', [request_id]);
@@ -252,7 +253,7 @@ app.post('/requests/:request_id/downvote', async (req, res) => {
 // --- USAGE ENDPOINTS (dummy, always allow 3 adds/upvotes, 1 downvote) ---
 app.get('/sessions/:session_id/add-usage/:user_id', async (req, res) => {
   try {
-    const session_code = req.params.session_id;
+    const session_code = req.params.session_id.toUpperCase();
     const user_id = req.params.user_id;
     const session_id = await getSessionIdFromCode(session_code);
     const usage = getOrInitUsage(session_id, user_id);
@@ -269,7 +270,7 @@ app.get('/sessions/:session_id/add-usage/:user_id', async (req, res) => {
 });
 app.get('/sessions/:session_id/vote-usage/:user_id', async (req, res) => {
   try {
-    const session_code = req.params.session_id;
+    const session_code = req.params.session_id.toUpperCase();
     const user_id = req.params.user_id;
     const session_id = await getSessionIdFromCode(session_code);
     const usage = getOrInitUsage(session_id, user_id);
@@ -306,7 +307,7 @@ app.get('/spotify/search', async (req, res) => {
 // Join session by code (for frontend join flow)
 app.get('/sessions/:session_code', async (req, res) => {
   try {
-    const { session_code } = req.params;
+    const session_code = req.params.session_code.toUpperCase();
     console.log('Looking for session:', session_code);
     const result = await db.query('SELECT * FROM sessions WHERE session_code = $1', [session_code]);
     console.log('Query result:', result.rows);
@@ -324,7 +325,7 @@ app.get('/sessions/:session_code', async (req, res) => {
 // Join session and recalculate crowd count based on unique users
 app.post('/sessions/:session_code/join', async (req, res) => {
   try {
-    const { session_code } = req.params;
+    const session_code = req.params.session_code.toUpperCase();
     const { user_id } = req.body;
 
     // Get session ID
