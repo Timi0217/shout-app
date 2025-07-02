@@ -11,11 +11,11 @@ import * as SecureStore from 'expo-secure-store';
 const BUTTON_RADIUS = 18; // Match Create/Join buttons
 
 export default function SessionScreen({ route, navigation }) {
-  const initialSession = route.params?.session;
+  const initialSessionCode = route.params?.session_code;
   const { user, logout } = useAuth();
   
   // State management
-  const [session, setSession] = useState(initialSession || null);
+  const [session, setSession] = useState(null);
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -48,9 +48,9 @@ export default function SessionScreen({ route, navigation }) {
     return sessionObj.session_code || sessionObj.session_id || sessionObj.code || sessionObj.id;
   };
 
-  // Restore session from storage if no param
+  // Restore session from storage if no session_code param
   useEffect(() => {
-    if (!initialSession && !restoreTried) {
+    if (!initialSessionCode && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
@@ -71,13 +71,13 @@ export default function SessionScreen({ route, navigation }) {
     }
   }, []); // Run once only
 
-  // Fetch session from backend if only session_code param is present (for web deep links)
+  // Fetch session from backend if session_code param is present and session is not loaded
   useEffect(() => {
-    if (!initialSession && route.params?.session_code && !session && !restoring && !restoreTried) {
+    if (initialSessionCode && !session && !restoring && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
-          const code = route.params.session_code;
+          const code = initialSessionCode;
           const response = await fetch(
             `${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${code}`
           );
@@ -95,7 +95,7 @@ export default function SessionScreen({ route, navigation }) {
         setRestoreTried(true);
       })();
     }
-  }, [route.params, session, restoring, restoreTried, initialSession]);
+  }, [initialSessionCode, session, restoring, restoreTried]);
 
   // Save session whenever it changes
   useEffect(() => {
