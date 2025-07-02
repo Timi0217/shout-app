@@ -11,12 +11,11 @@ import * as SecureStore from 'expo-secure-store';
 const BUTTON_RADIUS = 18; // Match Create/Join buttons
 
 export default function SessionScreen({ route, navigation }) {
-  const initialSession = route.params?.session;
   const initialSessionCode = route.params?.session_code;
   const { user, logout } = useAuth();
   
   // State management
-  const [session, setSession] = useState(initialSession || null);
+  const [session, setSession] = useState(null);
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -49,9 +48,9 @@ export default function SessionScreen({ route, navigation }) {
     return sessionObj.session_code || sessionObj.code;
   };
 
-  // Restore session from storage if no session_code param and no initialSession
+  // Restore session from storage if no session_code param
   useEffect(() => {
-    if (!initialSession && !initialSessionCode && !restoreTried) {
+    if (!initialSessionCode && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
@@ -74,7 +73,7 @@ export default function SessionScreen({ route, navigation }) {
 
   // Fetch session from backend if session_code param is present and session is not loaded
   useEffect(() => {
-    if (!initialSession && initialSessionCode && !session && !restoring && !restoreTried) {
+    if (initialSessionCode && !session && !restoring && !restoreTried) {
       setRestoring(true);
       (async () => {
         try {
@@ -96,7 +95,7 @@ export default function SessionScreen({ route, navigation }) {
         setRestoreTried(true);
       })();
     }
-  }, [initialSession, initialSessionCode, session, restoring, restoreTried]);
+  }, [initialSessionCode, session, restoring, restoreTried]);
 
   // Save session whenever it changes
   useEffect(() => {
