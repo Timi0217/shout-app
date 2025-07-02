@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions, Image, Linking } from 'react-native';
 import colors from '../constants/colors';
 import { useAuth } from '../AuthContext';
 import { createSession } from '../utils/api';
@@ -63,18 +63,22 @@ export default function CreateOrJoinScreen({ navigation }) {
         <Text style={styles.taglineMain}>Control the vibe</Text>
         <Text style={styles.taglineSub}>Request and vote on songs</Text>
       </View>
-      {/* Smaller spacer to push buttons further down */}
-      <View style={{ height: height * 0.12 }} />
-      {/* Buttons */}
-      <TouchableOpacity style={styles.button} onPress={handleCreateSession}>
-        <Text style={styles.buttonText}>CREATE SESSION</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, { marginTop: 28 }]} onPress={() => navigation.navigate('JoinSession')}>
-        <Text style={styles.buttonText}>JOIN SESSION</Text>
-      </TouchableOpacity>
+      {/* Spacer to push buttons to the bottom */}
+      <View style={{ flex: 1 }} />
+      {/* Buttons near the bottom with buffer above footer */}
+      <View style={styles.buttonGroup}>
+        <TouchableOpacity style={styles.button} onPress={handleCreateSession}>
+          <Text style={styles.buttonText}>CREATE SESSION</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, { marginTop: 28 }]} onPress={() => navigation.navigate('JoinSession')}>
+          <Text style={styles.buttonText}>JOIN SESSION</Text>
+        </TouchableOpacity>
+      </View>
       {/* Footer tag at the bottom */}
       <View style={styles.footerTagContainer}>
-        <Text style={styles.footerTag}>made with love by tmi 💛</Text>
+        <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/timilehyinn/')} activeOpacity={0.7}>
+          <Text style={styles.footerTag}>made with love by tmi 💛</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -187,10 +191,15 @@ const styles = StyleSheet.create({
   footerTag: {
     color: colors.primary,
     fontSize: 15,
-    fontFamily: 'Manrope-Regular', // Will fallback if not available
+    fontFamily: Platform.OS === 'android' ? 'sans-serif' : 'System',
     fontWeight: '600',
     letterSpacing: 0.2,
     textAlign: 'center',
     opacity: 0.95,
+  },
+  buttonGroup: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 40, // buffer above the footer
   },
 }); 
