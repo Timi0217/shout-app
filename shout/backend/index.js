@@ -116,8 +116,8 @@ function sendFullError(res, err, fallback) {
 // In-memory usage tracking (for demo; use Redis or DB for production)
 const usageStore = {};
 const ADD_LIMIT = 3;
-const UPVOTE_LIMIT = 3;
-const DOWNVOTE_LIMIT = 1;
+const UPVOTE_LIMIT = 5;
+const DOWNVOTE_LIMIT = 2;
 const COOLDOWN_SECONDS = 60 * 5; // 5 minutes
 
 function getUsageKey(session_id, user_id) {
