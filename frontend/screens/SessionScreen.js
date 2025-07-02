@@ -71,6 +71,32 @@ export default function SessionScreen({ route, navigation }) {
     }
   }, []); // Run once only
 
+  // Fetch session from backend if only session_code param is present (for web deep links)
+  useEffect(() => {
+    if (!initialSession && route.params?.session_code && !session && !restoring && !restoreTried) {
+      setRestoring(true);
+      (async () => {
+        try {
+          const code = route.params.session_code;
+          const response = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${code}`
+          );
+          if (response.ok) {
+            const sessionObj = await response.json();
+            setSession(sessionObj);
+            await SecureStore.setItemAsync('currentSession', JSON.stringify(sessionObj));
+          } else {
+            setSession(null);
+          }
+        } catch (e) {
+          setSession(null);
+        }
+        setRestoring(false);
+        setRestoreTried(true);
+      })();
+    }
+  }, [route.params, session, restoring, restoreTried, initialSession]);
+
   // Save session whenever it changes
   useEffect(() => {
     if (session) {
