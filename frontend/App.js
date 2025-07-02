@@ -16,11 +16,26 @@ import PhoneLoginScreen from './screens/PhoneLoginScreen';
 
 const Stack = createNativeStackNavigator();
 
+const linking = {
+  prefixes: ['https://joinshout.fyi', 'http://joinshout.fyi', 'joinshout.fyi://'],
+  config: {
+    screens: {
+      CreateOrJoin: '',
+      JoinSession: 'joinsession',
+      Session: 'joinsession/:sessionid',
+      Welcome: 'welcome',
+      DJDashboard: 'djdashboard',
+      SongRequest: 'songrequest',
+      PhoneLogin: 'login',
+    },
+  },
+};
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
             initialRouteName="CreateOrJoin"
         screenOptions={{
