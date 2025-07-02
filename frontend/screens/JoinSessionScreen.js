@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Keyboard, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Keyboard, TouchableWithoutFeedback, Platform, ScrollView } from 'react-native';
 import colors from '../constants/colors';
 import { joinSession } from '../utils/api';
 import { useAuth } from '../AuthContext';
@@ -77,32 +77,33 @@ export default function JoinSessionScreen({ navigation }) {
   }, [navigation, logout, user]);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        <View style={styles.topSection}>
-          <Text style={styles.title}>Join a Session</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter session code"
-            placeholderTextColor={colors.gray}
-            value={sessionCode}
-            onChangeText={setSessionCode}
-            autoCapitalize="characters"
-            autoFocus={true}
-            editable={true}
-            onFocus={() => console.log('Session code input focused')}
-          />
-          <TouchableOpacity
-            style={[styles.button, { opacity: sessionCode ? 1 : 0.5 }]}
-            onPress={handleGoToSession}
-            disabled={!sessionCode || loading}
-          >
-            {loading ? <ActivityIndicator color={colors.buttonText} /> : <Text style={styles.buttonText}>Go to Session</Text>}
-          </TouchableOpacity>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </View>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.topSection}>
+        <Text style={styles.title}>Join a Session</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter session code"
+          placeholderTextColor={colors.gray}
+          value={sessionCode}
+          onChangeText={setSessionCode}
+          autoCapitalize="characters"
+          autoFocus={true}
+          editable={true}
+          onFocus={() => console.log('Session code input focused')}
+        />
+        <TouchableOpacity
+          style={[styles.button, { opacity: sessionCode ? 1 : 0.5 }]}
+          onPress={handleGoToSession}
+          disabled={!sessionCode || loading}
+        >
+          {loading ? <ActivityIndicator color={colors.buttonText} /> : <Text style={styles.buttonText}>Go to Session</Text>}
+        </TouchableOpacity>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
-    </TouchableWithoutFeedback>
+    </ScrollView>
   );
 }
 

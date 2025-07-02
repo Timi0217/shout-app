@@ -206,8 +206,8 @@ app.delete('/sessions/:session_id/requests/:request_id', async (req, res) => {
 // Upvote a song request
 app.post('/requests/:request_id/upvote', async (req, res) => {
   try {
-    const { request_id } = req.params;
-    const { user_id } = req.body;
+  const { request_id } = req.params;
+  const { user_id } = req.body;
     // Find session_id for this request
     const result = await db.query('SELECT session_id FROM requests WHERE request_id = $1', [request_id]);
     if (result.rows.length === 0) throw new Error('Request not found');
@@ -229,8 +229,8 @@ app.post('/requests/:request_id/upvote', async (req, res) => {
 // Downvote a song request
 app.post('/requests/:request_id/downvote', async (req, res) => {
   try {
-    const { request_id } = req.params;
-    const { user_id } = req.body;
+  const { request_id } = req.params;
+  const { user_id } = req.body;
     // Find session_id for this request
     const result = await db.query('SELECT session_id FROM requests WHERE request_id = $1', [request_id]);
     if (result.rows.length === 0) throw new Error('Request not found');

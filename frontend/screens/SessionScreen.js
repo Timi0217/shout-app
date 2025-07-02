@@ -137,9 +137,9 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current);
+      clearInterval(timerRef.current);
         timerRef.current = null;
-      }
+    }
     };
   }, [voteUsage.upvotes_left, voteUsage.downvotes_left, voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
 
@@ -156,7 +156,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (addTimerRef.current) {
-        clearInterval(addTimerRef.current);
+      clearInterval(addTimerRef.current);
         addTimerRef.current = null;
       }
     };
