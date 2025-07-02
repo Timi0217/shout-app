@@ -30,7 +30,7 @@ export default function SessionScreen({ route, navigation }) {
   });
   const [addUsage, setAddUsage] = useState({ adds_left: 3, add_reset_seconds: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sessionRestored, setSessionRestored] = useState(false);
+  const [sessionRestored, setSessionRestored] = useState(!!initialSession);
   
   const timerRef = useRef();
   const addTimerRef = useRef();
@@ -63,6 +63,8 @@ export default function SessionScreen({ route, navigation }) {
 
   // Session restoration - restore session if missing
   useEffect(() => {
+    // Only run restoration if there is no session from params
+    if (!!initialSession) return;
     const restoreSession = async () => {
       if (!session && !sessionRestored) {
         try {
@@ -101,7 +103,7 @@ export default function SessionScreen({ route, navigation }) {
       }
     };
     restoreSession();
-  }, [session, sessionRestored, navigation]);
+  }, [session, sessionRestored, navigation, initialSession]);
 
   // Data fetching functions
   const fetchQueue = async () => {
