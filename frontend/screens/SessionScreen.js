@@ -1062,7 +1062,7 @@ const styles = StyleSheet.create({
     height: 36,
   },
   ownRequestLabel: {
-    color: colors.primary,
+    color: '#111',
     fontWeight: '700',
     fontSize: 14,
     textAlign: 'center',
