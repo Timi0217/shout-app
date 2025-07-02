@@ -22,6 +22,7 @@ const linking = {
     screens: {
       CreateOrJoin: '',
       JoinSession: 'JoinSession',
+      // Only session_code is in the URL; session object is NOT serialized in the path or query
       Session: 'sessions/:session_code',
       PhoneLogin: 'login',
     },
