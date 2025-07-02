@@ -18,7 +18,7 @@ export default function CreateOrJoinScreen({ navigation }) {
           navigation.reset({
             index: 0,
             routes: [
-              { name: 'Session', params: { session: result.session } },
+              { name: 'Session', params: { session_code: result.session.session_code || result.session.session_id, session: result.session } },
             ],
           });
         },
@@ -29,7 +29,7 @@ export default function CreateOrJoinScreen({ navigation }) {
     navigation.reset({
       index: 0,
       routes: [
-        { name: 'Session', params: { session: result.session } },
+        { name: 'Session', params: { session_code: result.session.session_code || result.session.session_id, session: result.session } },
       ],
     });
   };
