@@ -175,6 +175,10 @@ export default function SessionScreen({ route, navigation }) {
 
   const handleSearch = async (text) => {
     setQuery(text);
+    if (addUsage.adds_left === 0) {
+      setResults([]);
+      return;
+    }
     if (text.length < 2) {
       setResults([]);
       return;
@@ -557,6 +561,9 @@ export default function SessionScreen({ route, navigation }) {
                 onChangeText={handleSearch}
                 returnKeyType="search"
                 editable={addUsage.adds_left > 0}
+                onFocus={() => {
+                  if (addUsage.adds_left === 0) setResults([]);
+                }}
               />
               {loading && <ActivityIndicator style={{ marginTop: 16 }} color={colors.primary} />}
               {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -963,6 +970,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 8,
+    width: 88,
+    height: 36,
+    justifyContent: 'center',
   },
   voteCircleColored: {
     width: 36,
@@ -1058,7 +1068,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    minWidth: 60,
+    width: 88,
     height: 36,
   },
   ownRequestLabel: {
