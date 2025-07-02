@@ -30,7 +30,7 @@ export default function SessionScreen({ route, navigation }) {
   });
   const [addUsage, setAddUsage] = useState({ adds_left: 3, add_reset_seconds: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sessionRestored, setSessionRestored] = useState(!!initialSession);
+  const [sessionRestored, setSessionRestored] = useState(false);
   
   const timerRef = useRef();
   const addTimerRef = useRef();
@@ -66,47 +66,23 @@ export default function SessionScreen({ route, navigation }) {
 
   // Session restoration - restore session if missing
   useEffect(() => {
-    // Only run restoration if there is no session from params
-    if (!!initialSession) return;
+    // Only run restoration if there is NO session and not already restored
+    if (session || sessionRestored) return;
     const restoreSession = async () => {
-      if (!session && !sessionRestored) {
-        try {
-          const storedSession = await SecureStore.getItemAsync('currentSession');
-          if (storedSession) {
-            const parsedSession = JSON.parse(storedSession);
-            setSession(parsedSession);
-            // Verify session is still valid by fetching latest data
-            try {
-              const sessionId = getSessionId(parsedSession);
-              const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionId}`);
-              if (response.ok) {
-                const updatedSession = await response.json();
-                setSession(updatedSession);
-              } else {
-                await SecureStore.deleteItemAsync('currentSession');
-                navigation.replace('CreateOrJoin');
-                setSessionRestored(true);
-                return;
-              }
-            } catch (fetchError) {
-              console.error('Error verifying session:', fetchError);
-            }
-          } else {
-            navigation.replace('CreateOrJoin');
-            setSessionRestored(true);
-            return;
-          }
-        } catch (error) {
-          console.error('Error restoring session:', error);
-          navigation.replace('CreateOrJoin');
-          setSessionRestored(true);
-          return;
+      try {
+        const storedSession = await SecureStore.getItemAsync('currentSession');
+        if (storedSession) {
+          const parsedSession = JSON.parse(storedSession);
+          setSession(parsedSession);
+          // Optionally: verify session is still valid with backend here
         }
-        setSessionRestored(true);
+      } catch (error) {
+        console.error('Error restoring session:', error);
       }
+      setSessionRestored(true);
     };
     restoreSession();
-  }, [session, sessionRestored, navigation, initialSession]);
+  }, [session, sessionRestored]);
 
   // Data fetching functions
   const fetchQueue = async () => {
