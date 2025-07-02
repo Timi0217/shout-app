@@ -49,10 +49,10 @@ export default function CreateOrJoinScreen({ navigation }) {
           <Text style={styles.logoutButtonText}>LOGOUT</Text>
         </TouchableOpacity>
       )}
-      {/* Large top spacer for modern vertical rhythm */}
-      <View style={{ height: height * 0.20 }} />
+      {/* Reduced top spacer for more space below */}
+      <View style={{ height: height * 0.10 }} />
       {/* Extra space between logout and SHOUT */}
-      <View style={{ height: 18 }} />
+      <View style={{ height: 10 }} />
       {/* Logo/Branding */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
         <Text style={styles.logo}>SHOUT</Text>
@@ -63,8 +63,8 @@ export default function CreateOrJoinScreen({ navigation }) {
         <Text style={styles.taglineMain}>Control the vibe</Text>
         <Text style={styles.taglineSub}>Request and vote on songs</Text>
       </View>
-      {/* Larger spacer to push buttons further down */}
-      <View style={{ height: height * 0.28 }} />
+      {/* Smaller spacer to push buttons further down */}
+      <View style={{ height: height * 0.12 }} />
       {/* Buttons */}
       <TouchableOpacity style={styles.button} onPress={handleCreateSession}>
         <Text style={styles.buttonText}>CREATE SESSION</Text>
@@ -72,8 +72,10 @@ export default function CreateOrJoinScreen({ navigation }) {
       <TouchableOpacity style={[styles.button, { marginTop: 28 }]} onPress={() => navigation.navigate('JoinSession')}>
         <Text style={styles.buttonText}>JOIN SESSION</Text>
       </TouchableOpacity>
-      {/* Smaller bottom spacer for balance */}
-      <View style={{ flex: 0.5 }} />
+      {/* Footer tag at the bottom */}
+      <View style={styles.footerTagContainer}>
+        <Text style={styles.footerTag}>made with love by tmi 💛</Text>
+      </View>
     </View>
   );
 }
@@ -173,5 +175,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  footerTagContainer: {
+    position: 'absolute',
+    bottom: 18,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerTag: {
+    color: colors.primary,
+    fontSize: 15,
+    fontFamily: 'Manrope-Regular', // Will fallback if not available
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    opacity: 0.95,
   },
 }); 
