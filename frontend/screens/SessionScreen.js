@@ -374,55 +374,57 @@ export default function SessionScreen({ route, navigation }) {
           </View>
           {/* Stats Card - improved layout and shorter labels */}
           <View style={styles.cardContainer}>
-            <View style={styles.limitsCardRowFixed}> 
-              <View style={styles.limitItemFixed}>
-                <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Add</Text>
-                <Text style={styles.limitValue}>{user ? addUsage.adds_left : '-'}</Text>
-                <View style={styles.limitBadgeArea}>
-                  {user && addUsage.adds_left === 0 && addUsage.add_reset_seconds > 0 ? (
-                    <View style={styles.limitBadge}>
-                      <Text style={styles.limitBadgeText}>{Math.floor(addUsage.add_reset_seconds/60)}:{String(addUsage.add_reset_seconds%60).padStart(2,'0')}</Text>
-                    </View>
-                  ) : (
-                    <View style={{ height: 22 }} />
-                  )}
+            <View style={styles.card}>
+              <View style={styles.limitsCardRowFixed}> 
+                <View style={styles.limitItemFixed}>
+                  <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Add</Text>
+                  <Text style={styles.limitValue}>{user ? addUsage.adds_left : '-'}</Text>
+                  <View style={styles.limitBadgeArea}>
+                    {user && addUsage.adds_left === 0 && addUsage.add_reset_seconds > 0 ? (
+                      <View style={styles.limitBadge}>
+                        <Text style={styles.limitBadgeText}>{Math.floor(addUsage.add_reset_seconds/60)}:{String(addUsage.add_reset_seconds%60).padStart(2,'0')}</Text>
+                      </View>
+                    ) : (
+                      <View style={{ height: 22 }} />
+                    )}
+                  </View>
                 </View>
-              </View>
-              <View style={styles.limitItemFixed}>
-                <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Up</Text>
-                <Text style={styles.limitValue}>{user ? voteUsage.upvotes_left : '-'}</Text>
-                <View style={styles.limitBadgeArea}>
-                  {user && voteUsage.upvotes_left === 0 && voteUsage.upvote_reset_seconds > 0 ? (
-                    <View style={styles.limitBadge}>
-                      <Text style={styles.limitBadgeText}>{Math.floor(voteUsage.upvote_reset_seconds/60)}:{String(voteUsage.upvote_reset_seconds%60).padStart(2,'0')}</Text>
-                    </View>
-                  ) : (
-                    <View style={{ height: 22 }} />
-                  )}
+                <View style={styles.limitItemFixed}>
+                  <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Up</Text>
+                  <Text style={styles.limitValue}>{user ? voteUsage.upvotes_left : '-'}</Text>
+                  <View style={styles.limitBadgeArea}>
+                    {user && voteUsage.upvotes_left === 0 && voteUsage.upvote_reset_seconds > 0 ? (
+                      <View style={styles.limitBadge}>
+                        <Text style={styles.limitBadgeText}>{Math.floor(voteUsage.upvote_reset_seconds/60)}:{String(voteUsage.upvote_reset_seconds%60).padStart(2,'0')}</Text>
+                      </View>
+                    ) : (
+                      <View style={{ height: 22 }} />
+                    )}
+                  </View>
                 </View>
-              </View>
-              <View style={styles.limitItemFixed}>
-                <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Down</Text>
-                <Text style={styles.limitValue}>{user ? voteUsage.downvotes_left : '-'}</Text>
-                <View style={styles.limitBadgeArea}>
-                  {user && voteUsage.downvotes_left === 0 && voteUsage.downvote_reset_seconds > 0 ? (
-                    <View style={styles.limitBadge}>
-                      <Text style={styles.limitBadgeText}>{Math.floor(voteUsage.downvote_reset_seconds/60)}:{String(voteUsage.downvote_reset_seconds%60).padStart(2,'0')}</Text>
-                    </View>
-                  ) : (
-                    <View style={{ height: 22 }} />
-                  )}
+                <View style={styles.limitItemFixed}>
+                  <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Down</Text>
+                  <Text style={styles.limitValue}>{user ? voteUsage.downvotes_left : '-'}</Text>
+                  <View style={styles.limitBadgeArea}>
+                    {user && voteUsage.downvotes_left === 0 && voteUsage.downvote_reset_seconds > 0 ? (
+                      <View style={styles.limitBadge}>
+                        <Text style={styles.limitBadgeText}>{Math.floor(voteUsage.downvote_reset_seconds/60)}:{String(voteUsage.downvote_reset_seconds%60).padStart(2,'0')}</Text>
+                      </View>
+                    ) : (
+                      <View style={{ height: 22 }} />
+                    )}
+                  </View>
                 </View>
-              </View>
-              <View style={styles.limitItemFixed}>
-                <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Songs</Text>
-                <Text style={styles.limitValue}>{queue.length}</Text>
-                <View style={{ height: 22 }} />
-              </View>
-              <View style={styles.limitItemFixed}>
-                <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Crowd</Text>
-                <Text style={styles.limitValue}>{liveSession?.crowd ?? 1}</Text>
-                <View style={{ height: 22 }} />
+                <View style={styles.limitItemFixed}>
+                  <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Songs</Text>
+                  <Text style={styles.limitValue}>{queue.length}</Text>
+                  <View style={{ height: 22 }} />
+                </View>
+                <View style={styles.limitItemFixed}>
+                  <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Crowd</Text>
+                  <Text style={styles.limitValue}>{liveSession?.crowd ?? 1}</Text>
+                  <View style={{ height: 22 }} />
+                </View>
               </View>
             </View>
           </View>
