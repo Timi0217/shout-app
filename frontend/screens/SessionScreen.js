@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as SecureStore from 'expo-secure-store';
 
-const BUTTON_RADIUS = 18; // Match Create/Join Session buttons
+const BUTTON_RADIUS = 18; // Match Create/Join buttons
 
 export default function SessionScreen({ route, navigation }) {
   const initialSession = route.params?.session;
@@ -429,12 +429,24 @@ export default function SessionScreen({ route, navigation }) {
     });
   }, [navigation, logout, user]);
 
-  // Show loading if session is being restored
-  if (!session || !isInitialized) {
+  // Show loading ONLY while initializing
+  if (!isInitialized) {
     return (
-      <View style={[styles.container, { justifyContent: 'center' }]}>
+      <View style={[styles.container, { justifyContent: 'center' }]}> 
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading session...</Text>
+      </View>
+    );
+  }
+
+  // If no session after initialization, show error or redirect
+  if (!session) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}> 
+        <Text style={styles.loadingText}>No session found</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('CreateOrJoin')} style={{ marginTop: 24, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}>
+          <Text style={{ color: colors.buttonText, fontWeight: 'bold' }}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
