@@ -6,6 +6,7 @@ import { useAuth } from '../AuthContext';
 import homeIcon from '../assets/homebutton.png';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
+import * as SecureStore from 'expo-secure-store';
 
 const BUTTON_RADIUS = 18; // Match Create/Join Session buttons
 
@@ -27,6 +28,7 @@ export default function SessionScreen({ route, navigation }) {
   const [liveSession, setLiveSession] = useState(session);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const [restored, setRestored] = useState(false);
 
   const fetchQueue = async () => {
     if (!session) return;
@@ -331,6 +333,36 @@ export default function SessionScreen({ route, navigation }) {
       ),
     });
   }, [navigation, logout, user]);
+
+  // Persist session on mount
+  useEffect(() => {
+    if (session?.session_code) {
+      SecureStore.setItemAsync('lastSession', JSON.stringify(session));
+    }
+  }, [session?.session_code]);
+
+  // Restore session if missing
+  useEffect(() => {
+    if (!session && !restored) {
+      (async () => {
+        const stored = await SecureStore.getItemAsync('lastSession');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Fetch latest session data
+          const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${parsed.session_code}`);
+          if (sessionResponse.ok) {
+            const updatedSession = await sessionResponse.json();
+            navigation.replace('Session', { session: updatedSession });
+          } else {
+            navigation.replace('CreateOrJoin');
+          }
+        } else {
+          navigation.replace('CreateOrJoin');
+        }
+        setRestored(true);
+      })();
+    }
+  }, [session, restored, navigation]);
 
   if (!session) {
     return (
@@ -970,7 +1002,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 8,
-    width: 88,
+    width: 120,
     height: 36,
     justifyContent: 'center',
   },
@@ -1068,7 +1100,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    width: 100,
+    width: 120,
     height: 36,
   },
   ownRequestLabel: {
