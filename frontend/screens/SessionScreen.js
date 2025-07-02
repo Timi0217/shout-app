@@ -438,77 +438,96 @@ export default function SessionScreen({ route, navigation }) {
               <FlatList
                 data={queue}
                 keyExtractor={item => item.request_id?.toString()}
-                renderItem={({ item }) => (
-                  user && user.id === session.dj_id ? (
-                    <Swipeable
-                      renderRightActions={(_, dragX) => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', height: '100%' }}>
-                          <View style={{ width: 32 }} />
-                          <TouchableOpacity
-                            style={[styles.voteCircleColored, styles.downvoteCircleColored, { marginRight: 16 }]}
-                            onPress={() => handleRemove(item.request_id)}
-                          >
-                            <Ionicons name="remove" size={28} color="#fff" />
-                          </TouchableOpacity>
+                renderItem={({ item }) => {
+                  const isOwnRequest = user && item.user_id === user.id;
+                  if (user && user.id === session.dj_id) {
+                    // DJ view with swipe to remove
+                    return (
+                      <Swipeable
+                        renderRightActions={(_, dragX) => (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', height: '100%' }}>
+                            <View style={{ width: 32 }} />
+                            <TouchableOpacity
+                              style={[styles.voteCircleColored, styles.downvoteCircleColored, { marginRight: 16 }]}
+                              onPress={() => handleRemove(item.request_id)}
+                            >
+                              <Ionicons name="remove" size={28} color="#fff" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        overshootRight={false}
+                        rightThreshold={64}
+                      >
+                        <View style={styles.queueRowBlack}>
+                          <View style={styles.songInfo}>
+                            <Text style={styles.songTitleWhite}>{item.song_title}</Text>
+                            <Text style={styles.songArtistWhite}>{item.artist}</Text>
+                          </View>
+                          <View style={styles.voteCountBadgeYellow}>
+                            <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
+                          </View>
+                          {isOwnRequest ? (
+                            <View style={styles.ownRequestLabelContainer}>
+                              <Text style={styles.ownRequestLabel}>Your Request</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.voteArrowGroupBlack}>
+                              <TouchableOpacity
+                                style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                                onPress={() => handleUpvote(item.request_id)}
+                                disabled={voteUsage.upvotes_left === 0}
+                              >
+                                <Text style={styles.voteArrowWhite}>▲</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                                onPress={() => handleDownvote(item.request_id)}
+                                disabled={voteUsage.downvotes_left === 0}
+                              >
+                                <Text style={styles.voteArrowWhite}>▼</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
                         </View>
-                      )}
-                      overshootRight={false}
-                      rightThreshold={64}
-                    >
-                  <View style={styles.queueRowBlack}>
-                    <View style={styles.songInfo}>
-                      <Text style={styles.songTitleWhite}>{item.song_title}</Text>
-                      <Text style={styles.songArtistWhite}>{item.artist}</Text>
-                    </View>
-                    <View style={styles.voteCountBadgeYellow}>
-                      <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
-                    </View>
-                    <View style={styles.voteArrowGroupBlack}>
-                      <TouchableOpacity
-                        style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                        onPress={() => handleUpvote(item.request_id)}
-                        disabled={voteUsage.upvotes_left === 0}
-                      >
-                        <Text style={styles.voteArrowWhite}>▲</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                        onPress={() => handleDownvote(item.request_id)}
-                        disabled={voteUsage.downvotes_left === 0}
-                      >
-                        <Text style={styles.voteArrowWhite}>▼</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                    </Swipeable>
-                  ) : (
-                    <View style={styles.queueRowBlack}>
-                      <View style={styles.songInfo}>
-                        <Text style={styles.songTitleWhite}>{item.song_title}</Text>
-                        <Text style={styles.songArtistWhite}>{item.artist}</Text>
+                      </Swipeable>
+                    );
+                  } else {
+                    // Regular user view
+                    return (
+                      <View style={styles.queueRowBlack}>
+                        <View style={styles.songInfo}>
+                          <Text style={styles.songTitleWhite}>{item.song_title}</Text>
+                          <Text style={styles.songArtistWhite}>{item.artist}</Text>
+                        </View>
+                        <View style={styles.voteCountBadgeYellow}>
+                          <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
+                        </View>
+                        {isOwnRequest ? (
+                          <View style={styles.ownRequestLabelContainer}>
+                            <Text style={styles.ownRequestLabel}>Your Request</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.voteArrowGroupBlack}>
+                            <TouchableOpacity
+                              style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                              onPress={() => handleUpvote(item.request_id)}
+                              disabled={voteUsage.upvotes_left === 0}
+                            >
+                              <Text style={styles.voteArrowWhite}>▲</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                              onPress={() => handleDownvote(item.request_id)}
+                              disabled={voteUsage.downvotes_left === 0}
+                            >
+                              <Text style={styles.voteArrowWhite}>▼</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
-                      <View style={styles.voteCountBadgeYellow}>
-                        <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
-                      </View>
-                      <View style={styles.voteArrowGroupBlack}>
-                        <TouchableOpacity
-                          style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                          onPress={() => handleUpvote(item.request_id)}
-                          disabled={voteUsage.upvotes_left === 0}
-                        >
-                          <Text style={styles.voteArrowWhite}>▲</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                          onPress={() => handleDownvote(item.request_id)}
-                          disabled={voteUsage.downvotes_left === 0}
-                        >
-                          <Text style={styles.voteArrowWhite}>▼</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )
-                )}
+                    );
+                  }
+                }}
                 showsVerticalScrollIndicator={true}
                 scrollEnabled={true}
                 bounces={false}
@@ -1030,5 +1049,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     letterSpacing: 1,
+  },
+  ownRequestLabelContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    minWidth: 60,
+    height: 36,
+  },
+  ownRequestLabel: {
+    color: colors.primary,
+    fontWeight: '700',
+    fontSize: 14,
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
 }); 
