@@ -8,110 +8,120 @@ import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as SecureStore from 'expo-secure-store';
 
-const BUTTON_RADIUS = 18; // Match Create/Join buttons
+const BUTTON_RADIUS = 18; // Match Create/Join Session buttons
 
 export default function SessionScreen({ route, navigation }) {
-  // True ground zero: only use session from params
-  const initialSession = route.params?.session || null;
+  const session = route.params?.session;
   const { user, logout } = useAuth();
-  
-  // State management
-  const [session, setSession] = useState(initialSession);
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [voteUsage, setVoteUsage] = useState({ 
-    upvotes_left: 3, 
-    downvotes_left: 1, 
-    upvote_reset_seconds: 0, 
-    downvote_reset_seconds: 0 
-  });
+  const [voteUsage, setVoteUsage] = useState({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
   const [addUsage, setAddUsage] = useState({ adds_left: 3, add_reset_seconds: 0 });
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-  const [restoreTried, setRestoreTried] = useState(false);
-  const searchInputRef = useRef();
-  
   const timerRef = useRef();
   const addTimerRef = useRef();
   const [showQueueFade, setShowQueueFade] = useState(false);
   const queueListRef = useRef();
   const [liveSession, setLiveSession] = useState(session);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
-  const sessionIdRef = useRef();
+  const [restored, setRestored] = useState(false);
 
-  // Data fetching functions
   const fetchQueue = async () => {
-    const sessionCode = session?.session_code || session?.code;
-    if (!sessionCode) return;
+    if (!session) return;
     setQueueLoading(true);
     try {
-      const data = await getSessionQueue(sessionCode);
-      setQueue(data || []);
-    } catch (err) {
-      setQueue([]);
-    }
+      const data = await getSessionQueue(session.session_code);
+      setQueue(data);
+    } catch (err) {}
     setQueueLoading(false);
   };
 
   const fetchVoteUsage = async () => {
-    const sessionCode = session?.session_code || session?.code;
-    if (!sessionCode || !user?.id) return;
+    if (!session || !user?.id) return;
     try {
-      const usage = await getVoteUsage(sessionCode, user.id);
+      const usage = await getVoteUsage(session.session_code, user.id);
       setVoteUsage(usage);
     } catch (err) {
-      setVoteUsage({ 
-        upvotes_left: 3, 
-        downvotes_left: 1, 
-        upvote_reset_seconds: 0, 
-        downvote_reset_seconds: 0 
-      });
+      setVoteUsage({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
     }
   };
 
   const fetchAddUsage = async () => {
-    const sessionCode = session?.session_code || session?.code;
-    if (!sessionCode || !user?.id) return;
+    if (!session || !user?.id) return;
     try {
-      const usage = await getAddUsage(sessionCode, user.id);
+      const usage = await getAddUsage(session.session_code, user.id);
       setAddUsage(usage);
     } catch (err) {
       setAddUsage({ adds_left: 3, add_reset_seconds: 0 });
     }
   };
 
-  // Refresh all session data
-  const refreshAllSessionData = async (showLoader = false) => {
-    const sessionCode = session?.session_code || session?.code;
-    if (!sessionCode) return;
-    if (showLoader) setIsRefreshing(true);
-    try {
-      // Refresh session info
-      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionCode}`);
-      if (sessionResponse.ok) {
-        const updatedSession = await sessionResponse.json();
-        // ✅ Only update if meaningfully different
-        const currentSessionStr = JSON.stringify(session);
-        const updatedSessionStr = JSON.stringify(updatedSession);
-        if (currentSessionStr !== updatedSessionStr) {
-          setSession(updatedSession);
+  useEffect(() => {
+    let interval;
+    let unsubscribe;
+
+    const refreshData = async (showLoader = false) => {
+      if (!session?.session_code) return;
+      if (showLoader) setIsRefreshing(true);
+      try {
+        // Refresh session info
+        const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}`);
+        if (sessionResponse.ok) {
+          const updatedSession = await sessionResponse.json();
+          setLiveSession(updatedSession);
         }
+        // Refresh queue
+        await fetchQueue();
+        // Refresh usage data
+        if (user?.id) {
+          await fetchVoteUsage();
+          await fetchAddUsage();
+        }
+        setLastUpdateTime(Date.now());
+        if (showLoader) console.log('Pull to refresh completed');
+      } catch (err) {
+        console.error('Refresh failed:', err);
+      } finally {
+        if (showLoader) setIsRefreshing(false);
       }
-      // Refresh all data
-      await Promise.all([
-        fetchQueue(),
-        user?.id ? fetchVoteUsage() : Promise.resolve(),
-        user?.id ? fetchAddUsage() : Promise.resolve()
-      ]);
-    } catch (err) {
-    } finally {
-      if (showLoader) setIsRefreshing(false);
+    };
+
+    // Initial load
+    refreshData();
+
+    // Auto-refresh every 15 seconds (mobile-friendly)
+    interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      refreshData();
+    }, 15000);
+
+    // Refresh on focus
+    unsubscribe = navigation.addListener('focus', () => {
+      refreshData(true);
+    });
+
+    // Page visibility change handler (mobile optimization)
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        refreshData();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-  };
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (unsubscribe) unsubscribe();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+  }, [navigation, session?.session_code, user?.id]);
 
   // Timer for vote cooldowns
   useEffect(() => {
@@ -129,9 +139,9 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current);
+      clearInterval(timerRef.current);
         timerRef.current = null;
-      }
+    }
     };
   }, [voteUsage.upvotes_left, voteUsage.downvotes_left, voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
 
@@ -148,7 +158,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (addTimerRef.current) {
-        clearInterval(addTimerRef.current);
+      clearInterval(addTimerRef.current);
         addTimerRef.current = null;
       }
     };
@@ -165,7 +175,6 @@ export default function SessionScreen({ route, navigation }) {
     previousQueueLength.current = queue.length;
   }, [queue.length]);
 
-  // Search and interaction handlers
   const handleSearch = async (text) => {
     setQuery(text);
     if (addUsage.adds_left === 0) {
@@ -188,8 +197,13 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleAdd = async (track) => {
-    const sessionCode = session?.session_code || session?.code;
-    if (!sessionCode) {
+    console.log('=== DEBUG ADD SONG ===');
+    console.log('Session:', session);
+    console.log('User:', user);
+    console.log('Session DJ ID:', session?.dj_id);
+    console.log('Current User ID:', user?.id);
+    console.log('Are they the same?', session?.dj_id === user?.id);
+    if (!session) {
       Alert.alert('Error', 'No session found');
       return;
     }
@@ -197,6 +211,7 @@ export default function SessionScreen({ route, navigation }) {
       navigation.navigate('PhoneLogin');
       return;
     }
+    // Prevent adding duplicate songs (by title and artist)
     const alreadyInQueue = queue.some(
       item =>
         item.song_title.toLowerCase() === track.name.toLowerCase() &&
@@ -212,12 +227,13 @@ export default function SessionScreen({ route, navigation }) {
     }
     try {
       await addSongRequest({
-        session_code: sessionCode,
+        session_id: session.session_code,
         song_title: track.name,
         artist: track.artists.map(a => a.name).join(', '),
         user_id: user.id,
       });
-      await Promise.all([fetchQueue(), fetchAddUsage()]);
+      fetchQueue();
+      fetchAddUsage();
     } catch (err) {
       Alert.alert('Error', err.message);
       fetchAddUsage();
@@ -235,7 +251,8 @@ export default function SessionScreen({ route, navigation }) {
     }
     try {
       await upvoteRequest(request_id, user.id);
-      await Promise.all([fetchQueue(), fetchVoteUsage()]);
+      fetchQueue();
+      fetchVoteUsage();
     } catch (err) {
       Alert.alert('Vote Error', err.message);
     }
@@ -252,17 +269,19 @@ export default function SessionScreen({ route, navigation }) {
     }
     try {
       await downvoteRequest(request_id, user.id);
-      await Promise.all([fetchQueue(), fetchVoteUsage()]);
+      fetchQueue();
+      fetchVoteUsage();
     } catch (err) {
       Alert.alert('Vote Error', err.message);
     }
   };
 
   const handleRemove = async (request_id) => {
-    const sessionCode = session?.session_code || session?.code;
     try {
-      await removeSongRequest({ session_code: sessionCode, request_id, user_id: user.id });
-      await Promise.all([fetchQueue(), fetchVoteUsage(), fetchAddUsage()]);
+      await removeSongRequest({ session_id: session.session_code, request_id, user_id: user.id });
+      fetchQueue();
+      fetchVoteUsage();
+      fetchAddUsage();
     } catch (err) {
       Alert.alert('Remove Error', err.message);
     }
@@ -276,7 +295,6 @@ export default function SessionScreen({ route, navigation }) {
     setShowQueueFade(!atBottom && queue.length > 4);
   };
 
-  // Header configuration
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -297,10 +315,7 @@ export default function SessionScreen({ route, navigation }) {
       headerRight: () => (
         user ? (
           <TouchableOpacity
-            onPress={async () => { 
-              await SecureStore.deleteItemAsync('currentSession');
-              await logout(); 
-            }}
+            onPress={async () => { await logout(); }}
             style={styles.logoutButton}
             activeOpacity={0.85}
           >
@@ -319,21 +334,47 @@ export default function SessionScreen({ route, navigation }) {
     });
   }, [navigation, logout, user]);
 
-  const sessionCode = session?.session_code || session?.code;
+  // Persist session on mount
+  useEffect(() => {
+    if (session?.session_code) {
+      SecureStore.setItemAsync('lastSession', JSON.stringify(session));
+    }
+  }, [session?.session_code]);
+
+  // Restore session if missing
+  useEffect(() => {
+    if (!session && !restored) {
+      (async () => {
+        const stored = await SecureStore.getItemAsync('lastSession');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Fetch latest session data
+          const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${parsed.session_code}`);
+          if (sessionResponse.ok) {
+            const updatedSession = await sessionResponse.json();
+            navigation.replace('Session', { session: updatedSession });
+          } else {
+            navigation.replace('CreateOrJoin');
+          }
+        } else {
+          navigation.replace('CreateOrJoin');
+        }
+        setRestored(true);
+      })();
+    }
+  }, [session, restored, navigation]);
+
+  if (!session) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>No session data found.</Text>
+      </View>
+    );
+  }
 
   // Debug: log session object and route params
   console.log('Route params:', route.params);
   console.log('Session from params:', session);
-
-  // Clear results and blur input when out of adds
-  useEffect(() => {
-    if (addUsage.adds_left === 0) {
-      setResults([]);
-      if (searchInputRef.current && searchInputRef.current.blur) {
-        searchInputRef.current.blur();
-      }
-    }
-  }, [addUsage.adds_left]);
 
   // Main FlatList data: just the queue, but use header/footer for all other content
   return (
@@ -361,7 +402,7 @@ export default function SessionScreen({ route, navigation }) {
               <View style={[styles.sessionInfoRow, { justifyContent: 'center', marginBottom: 8 }]}> 
                 <Text style={[styles.sessionIdLabel, { fontSize: 20 }]}>ID:</Text>
                 <Text style={[styles.sessionCode, { fontSize: 28, marginLeft: 10 }]}> 
-                  {sessionCode || 'NO CODE'}
+                  {session?.session_code || session?.session_id || session?.code || session?.id || 'NO CODE'}
                 </Text>
                 <View style={styles.statusDot} />
               </View>
@@ -545,7 +586,6 @@ export default function SessionScreen({ route, navigation }) {
                 )}
               </View>
               <TextInput
-                ref={searchInputRef}
                 style={styles.searchBar}
                 placeholder="Search songs, artists"
                 placeholderTextColor={colors.gray}
@@ -1069,11 +1109,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     letterSpacing: 0.2,
-  },
-  loadingText: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
   },
 }); 

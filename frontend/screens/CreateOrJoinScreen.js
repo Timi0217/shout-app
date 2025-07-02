@@ -15,11 +15,10 @@ export default function CreateOrJoinScreen({ navigation }) {
       navigation.navigate('PhoneLogin', {
         onLoginSuccess: async (newUser) => {
           const result = await createSession({ dj_id: newUser.id, status: 'live' });
-          const code = result.session.session_code.trim().toUpperCase();
           navigation.reset({
             index: 0,
             routes: [
-              { name: 'Session', params: { session_code: code } },
+              { name: 'Session', params: { session: result.session } },
             ],
           });
         },
@@ -27,11 +26,10 @@ export default function CreateOrJoinScreen({ navigation }) {
       return;
     }
     const result = await createSession({ dj_id: user.id, status: 'live' });
-    const code = result.session.session_code.trim().toUpperCase();
     navigation.reset({
       index: 0,
       routes: [
-        { name: 'Session', params: { session_code: code } },
+        { name: 'Session', params: { session: result.session } },
       ],
     });
   };
