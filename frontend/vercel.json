@@ -1,4 +1,10 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/sessions/:sessionid", "destination": "/" },
+    { "source": "/joinsession", "destination": "/" },
+    { "source": "/joinsession/:sessionid", "destination": "/" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
