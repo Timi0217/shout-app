@@ -12,6 +12,7 @@ const BUTTON_RADIUS = 18; // Match Create/Join Session buttons
 
 export default function SessionScreen({ route, navigation }) {
   const session = route.params?.session;
+  const sessionCode = route.params?.sessionid;
   const { user, logout } = useAuth();
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
@@ -341,18 +342,25 @@ export default function SessionScreen({ route, navigation }) {
     }
   }, [session?.session_code]);
 
-  // Restore session if missing
+  // Restore session if missing, or fetch by sessionCode from URL
   useEffect(() => {
     if (!session && !restored) {
       (async () => {
-        const stored = await SecureStore.getItemAsync('lastSession');
-        if (stored) {
-          const parsed = JSON.parse(stored);
+        let code = sessionCode;
+        let stored = null;
+        if (!code) {
+          stored = await SecureStore.getItemAsync('lastSession');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            code = parsed.session_code;
+          }
+        }
+        if (code) {
           // Fetch latest session data
-          const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${parsed.session_code}`);
+          const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${code}`);
           if (sessionResponse.ok) {
             const updatedSession = await sessionResponse.json();
-            navigation.replace('Session', { session: updatedSession });
+            navigation.replace('Session', { sessionid: code, session: updatedSession });
           } else {
             navigation.replace('CreateOrJoin');
           }
@@ -362,7 +370,7 @@ export default function SessionScreen({ route, navigation }) {
         setRestored(true);
       })();
     }
-  }, [session, restored, navigation]);
+  }, [session, sessionCode, restored, navigation]);
 
   if (!session) {
     return (
