@@ -360,7 +360,7 @@ export default function SessionScreen({ route, navigation }) {
           const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${code}`);
           if (sessionResponse.ok) {
             const updatedSession = await sessionResponse.json();
-            navigation.replace('Session', { sessionid: code, session: updatedSession });
+            navigation.replace('Session', { sessionid: code });
           } else {
             navigation.replace('CreateOrJoin');
           }
