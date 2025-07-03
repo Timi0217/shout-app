@@ -11,9 +11,9 @@ import * as SecureStore from 'expo-secure-store';
 const BUTTON_RADIUS = 18; // Match Create/Join Session buttons
 
 export default function SessionScreen({ route, navigation }) {
-  const session = route.params?.session;
   const sessionCode = route.params?.sessionid;
   const { user, logout } = useAuth();
+  const [liveSession, setLiveSession] = useState(null);
   const [queue, setQueue] = useState([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -26,25 +26,44 @@ export default function SessionScreen({ route, navigation }) {
   const addTimerRef = useRef();
   const [showQueueFade, setShowQueueFade] = useState(false);
   const queueListRef = useRef();
-  const [liveSession, setLiveSession] = useState(session);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
-  const [restored, setRestored] = useState(false);
 
+  // Fetch session data on mount or when sessionCode changes
+  useEffect(() => {
+    if (!sessionCode) return;
+    const fetchSession = async () => {
+      setLiveSession(null);
+      try {
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLiveSession(data);
+        } else {
+          setLiveSession(null);
+        }
+      } catch (err) {
+        setLiveSession(null);
+      }
+    };
+    fetchSession();
+  }, [sessionCode]);
+
+  // Fetch queue, vote usage, add usage
   const fetchQueue = async () => {
-    if (!session) return;
+    if (!liveSession) return;
     setQueueLoading(true);
     try {
-      const data = await getSessionQueue(session.session_code);
+      const data = await getSessionQueue(liveSession.session_code);
       setQueue(data);
     } catch (err) {}
     setQueueLoading(false);
   };
 
   const fetchVoteUsage = async () => {
-    if (!session || !user?.id) return;
+    if (!liveSession || !user?.id) return;
     try {
-      const usage = await getVoteUsage(session.session_code, user.id);
+      const usage = await getVoteUsage(liveSession.session_code, user.id);
       setVoteUsage(usage);
     } catch (err) {
       setVoteUsage({ upvotes_left: 3, downvotes_left: 1, upvote_reset_seconds: 0, downvote_reset_seconds: 0 });
@@ -52,69 +71,63 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const fetchAddUsage = async () => {
-    if (!session || !user?.id) return;
+    if (!liveSession || !user?.id) return;
     try {
-      const usage = await getAddUsage(session.session_code, user.id);
+      const usage = await getAddUsage(liveSession.session_code, user.id);
       setAddUsage(usage);
     } catch (err) {
       setAddUsage({ adds_left: 3, add_reset_seconds: 0 });
     }
   };
 
+  // Refresh all session data
+  const refreshAllSessionData = async (showLoader = false) => {
+    if (!liveSession?.session_code) return;
+    if (showLoader) setIsRefreshing(true);
+    try {
+      // Refresh session info
+      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${liveSession.session_code}`);
+      if (sessionResponse.ok) {
+        const updatedSession = await sessionResponse.json();
+        setLiveSession(updatedSession);
+      }
+      // Refresh queue
+      await fetchQueue();
+      // Refresh usage data
+      if (user?.id) {
+        await fetchVoteUsage();
+        await fetchAddUsage();
+      }
+      setLastUpdateTime(Date.now());
+      if (showLoader) console.log('Pull to refresh completed');
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    } finally {
+      if (showLoader) setIsRefreshing(false);
+    }
+  };
+
+  // Initial and interval refresh
   useEffect(() => {
+    if (!liveSession) return;
+    refreshAllSessionData();
     let interval;
     let unsubscribe;
-
-    const refreshData = async (showLoader = false) => {
-      if (!session?.session_code) return;
-      if (showLoader) setIsRefreshing(true);
-      try {
-        // Refresh session info
-        const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${session.session_code}`);
-        if (sessionResponse.ok) {
-          const updatedSession = await sessionResponse.json();
-          setLiveSession(updatedSession);
-        }
-        // Refresh queue
-        await fetchQueue();
-        // Refresh usage data
-        if (user?.id) {
-          await fetchVoteUsage();
-          await fetchAddUsage();
-        }
-        setLastUpdateTime(Date.now());
-        if (showLoader) console.log('Pull to refresh completed');
-      } catch (err) {
-        console.error('Refresh failed:', err);
-      } finally {
-        if (showLoader) setIsRefreshing(false);
-      }
-    };
-
-    // Initial load
-    refreshData();
-
-    // Auto-refresh every 15 seconds (mobile-friendly)
     interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
-      refreshData();
+      refreshAllSessionData();
     }, 15000);
-
-    // Refresh on focus
     unsubscribe = navigation.addListener('focus', () => {
-      refreshData(true);
+      refreshAllSessionData(true);
     });
-
-    // Page visibility change handler (mobile optimization)
     const handleVisibilityChange = () => {
       if (typeof document !== 'undefined' && !document.hidden) {
-        refreshData();
+        refreshAllSessionData();
       }
     };
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-
     return () => {
       if (interval) clearInterval(interval);
       if (unsubscribe) unsubscribe();
@@ -122,7 +135,7 @@ export default function SessionScreen({ route, navigation }) {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
     };
-  }, [navigation, session?.session_code, user?.id]);
+  }, [navigation, liveSession?.session_code, user?.id]);
 
   // Timer for vote cooldowns
   useEffect(() => {
@@ -140,9 +153,9 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (timerRef.current) {
-      clearInterval(timerRef.current);
+        clearInterval(timerRef.current);
         timerRef.current = null;
-    }
+      }
     };
   }, [voteUsage.upvotes_left, voteUsage.downvotes_left, voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
 
@@ -159,7 +172,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (addTimerRef.current) {
-      clearInterval(addTimerRef.current);
+        clearInterval(addTimerRef.current);
         addTimerRef.current = null;
       }
     };
@@ -198,13 +211,7 @@ export default function SessionScreen({ route, navigation }) {
   };
 
   const handleAdd = async (track) => {
-    console.log('=== DEBUG ADD SONG ===');
-    console.log('Session:', session);
-    console.log('User:', user);
-    console.log('Session DJ ID:', session?.dj_id);
-    console.log('Current User ID:', user?.id);
-    console.log('Are they the same?', session?.dj_id === user?.id);
-    if (!session) {
+    if (!liveSession) {
       Alert.alert('Error', 'No session found');
       return;
     }
@@ -228,7 +235,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     try {
       await addSongRequest({
-        session_id: session.session_code,
+        session_id: liveSession.session_code,
         song_title: track.name,
         artist: track.artists.map(a => a.name).join(', '),
         user_id: user.id,
@@ -279,7 +286,7 @@ export default function SessionScreen({ route, navigation }) {
 
   const handleRemove = async (request_id) => {
     try {
-      await removeSongRequest({ session_id: session.session_code, request_id, user_id: user.id });
+      await removeSongRequest({ session_id: liveSession.session_code, request_id, user_id: user.id });
       fetchQueue();
       fetchVoteUsage();
       fetchAddUsage();
@@ -335,44 +342,7 @@ export default function SessionScreen({ route, navigation }) {
     });
   }, [navigation, logout, user]);
 
-  // Persist session on mount
-  useEffect(() => {
-    if (session?.session_code) {
-      SecureStore.setItemAsync('lastSession', JSON.stringify(session));
-    }
-  }, [session?.session_code]);
-
-  // Restore session if missing, or fetch by sessionCode from URL
-  useEffect(() => {
-    if (!session && !restored) {
-      (async () => {
-        let code = sessionCode;
-        let stored = null;
-        if (!code) {
-          stored = await SecureStore.getItemAsync('lastSession');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            code = parsed.session_code;
-          }
-        }
-        if (code) {
-          // Fetch latest session data
-          const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${code}`);
-          if (sessionResponse.ok) {
-            const updatedSession = await sessionResponse.json();
-            navigation.replace('Session', { sessionid: code });
-          } else {
-            navigation.replace('CreateOrJoin');
-          }
-        } else {
-          navigation.replace('CreateOrJoin');
-        }
-        setRestored(true);
-      })();
-    }
-  }, [session, sessionCode, restored, navigation]);
-
-  if (!session) {
+  if (!liveSession) {
     return (
       <View style={styles.container}>
         <Text style={styles.error}>No session data found.</Text>
@@ -382,7 +352,7 @@ export default function SessionScreen({ route, navigation }) {
 
   // Debug: log session object and route params
   console.log('Route params:', route.params);
-  console.log('Session from params:', session);
+  console.log('Session from params:', liveSession);
 
   // Main FlatList data: just the queue, but use header/footer for all other content
   return (
@@ -410,7 +380,7 @@ export default function SessionScreen({ route, navigation }) {
               <View style={[styles.sessionInfoRow, { justifyContent: 'center', marginBottom: 8 }]}> 
                 <Text style={[styles.sessionIdLabel, { fontSize: 20 }]}>ID:</Text>
                 <Text style={[styles.sessionCode, { fontSize: 28, marginLeft: 10 }]}> 
-                  {session?.session_code || session?.session_id || session?.code || session?.id || 'NO CODE'}
+                  {liveSession?.session_code || liveSession?.session_id || liveSession?.code || liveSession?.id || 'NO CODE'}
                 </Text>
                 <View style={styles.statusDot} />
               </View>
@@ -484,7 +454,7 @@ export default function SessionScreen({ route, navigation }) {
                 keyExtractor={item => item.request_id?.toString()}
                 renderItem={({ item }) => {
                   const isOwnRequest = user && item.user_id === user.id;
-                  if (user && user.id === session.dj_id) {
+                  if (user && user.id === liveSession.dj_id) {
                     // DJ view with swipe to remove
                     return (
                       <Swipeable
