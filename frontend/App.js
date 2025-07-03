@@ -22,7 +22,7 @@ const linking = {
     screens: {
       CreateOrJoin: '',
       JoinSession: 'joinsession',
-      Session: 'joinsession/:sessionid',
+      Session: 'sessions/:sessionid',
       Welcome: 'welcome',
       DJDashboard: 'djdashboard',
       SongRequest: 'songrequest',
