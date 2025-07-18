@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, ScrollView, ToastAndroid, RefreshControl } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, ScrollView, ToastAndroid, RefreshControl, Modal, Pressable } from 'react-native';
 import colors from '../constants/colors';
 import { searchSpotify, addSongRequest, getSessionQueue, upvoteRequest, downvoteRequest, getVoteUsage, getAddUsage, removeSongRequest } from '../utils/api';
 import { useAuth } from '../AuthContext';
@@ -7,6 +7,7 @@ import homeIcon from '../assets/homebutton.png';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as SecureStore from 'expo-secure-store';
+import QRCode from 'react-native-qrcode-svg';
 
 const BUTTON_RADIUS = 18; // Match Create/Join Session buttons
 
@@ -28,6 +29,12 @@ export default function SessionScreen({ route, navigation }) {
   const queueListRef = useRef();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const [qrVisible, setQrVisible] = useState(false);
+
+  // Generate join URL for QR code
+  const joinUrl = liveSession?.session_code
+    ? `https://yourapp.com/join?session=${liveSession.session_code}`
+    : '';
 
   // Fetch session data on mount or when sessionCode changes
   useEffect(() => {
@@ -153,9 +160,9 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current);
+      clearInterval(timerRef.current);
         timerRef.current = null;
-      }
+    }
     };
   }, [voteUsage.upvotes_left, voteUsage.downvotes_left, voteUsage.upvote_reset_seconds, voteUsage.downvote_reset_seconds]);
 
@@ -172,7 +179,7 @@ export default function SessionScreen({ route, navigation }) {
     }
     return () => {
       if (addTimerRef.current) {
-        clearInterval(addTimerRef.current);
+      clearInterval(addTimerRef.current);
         addTimerRef.current = null;
       }
     };
@@ -389,50 +396,50 @@ export default function SessionScreen({ route, navigation }) {
           {/* Stats Card - improved layout and shorter labels */}
           <View style={styles.cardContainer}>
             <View style={styles.card}>
-              <View style={styles.limitsCardRowFixed}> 
-                <View style={styles.limitItemFixed}>
+            <View style={styles.limitsCardRowFixed}>
+              <View style={styles.limitItemFixed}>
                   <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Add</Text>
                   <Text style={styles.limitValue}>{user ? addUsage.adds_left : '-'}</Text>
-                  <View style={styles.limitBadgeArea}>
+                <View style={styles.limitBadgeArea}>
                     {user && addUsage.adds_left === 0 && addUsage.add_reset_seconds > 0 ? (
-                      <View style={styles.limitBadge}>
+                    <View style={styles.limitBadge}>
                         <Text style={styles.limitBadgeText}>{Math.floor(addUsage.add_reset_seconds/60)}:{String(addUsage.add_reset_seconds%60).padStart(2,'0')}</Text>
-                      </View>
-                    ) : (
-                      <View style={{ height: 22 }} />
-                    )}
-                  </View>
+                    </View>
+                  ) : (
+                    <View style={{ height: 22 }} />
+                  )}
                 </View>
-                <View style={styles.limitItemFixed}>
+              </View>
+              <View style={styles.limitItemFixed}>
                   <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Up</Text>
                   <Text style={styles.limitValue}>{user ? voteUsage.upvotes_left : '-'}</Text>
-                  <View style={styles.limitBadgeArea}>
+                <View style={styles.limitBadgeArea}>
                     {user && voteUsage.upvotes_left === 0 && voteUsage.upvote_reset_seconds > 0 ? (
-                      <View style={styles.limitBadge}>
+                    <View style={styles.limitBadge}>
                         <Text style={styles.limitBadgeText}>{Math.floor(voteUsage.upvote_reset_seconds/60)}:{String(voteUsage.upvote_reset_seconds%60).padStart(2,'0')}</Text>
-                      </View>
-                    ) : (
-                      <View style={{ height: 22 }} />
-                    )}
-                  </View>
+                    </View>
+                  ) : (
+                    <View style={{ height: 22 }} />
+                  )}
                 </View>
-                <View style={styles.limitItemFixed}>
+              </View>
+              <View style={styles.limitItemFixed}>
                   <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Down</Text>
                   <Text style={styles.limitValue}>{user ? voteUsage.downvotes_left : '-'}</Text>
-                  <View style={styles.limitBadgeArea}>
+                <View style={styles.limitBadgeArea}>
                     {user && voteUsage.downvotes_left === 0 && voteUsage.downvote_reset_seconds > 0 ? (
-                      <View style={styles.limitBadge}>
+                    <View style={styles.limitBadge}>
                         <Text style={styles.limitBadgeText}>{Math.floor(voteUsage.downvote_reset_seconds/60)}:{String(voteUsage.downvote_reset_seconds%60).padStart(2,'0')}</Text>
-                      </View>
-                    ) : (
-                      <View style={{ height: 22 }} />
-                    )}
-                  </View>
+                    </View>
+                  ) : (
+                    <View style={{ height: 22 }} />
+                  )}
                 </View>
-                <View style={styles.limitItemFixed}>
-                  <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Songs</Text>
-                  <Text style={styles.limitValue}>{queue.length}</Text>
-                  <View style={{ height: 22 }} />
+              </View>
+              <View style={styles.limitItemFixed}>
+                <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Songs</Text>
+                <Text style={styles.limitValue}>{queue.length}</Text>
+                <View style={{ height: 22 }} />
                 </View>
                 <View style={styles.limitItemFixed}>
                   <Text style={styles.limitLabel} numberOfLines={1} ellipsizeMode="tail">Crowd</Text>
@@ -472,35 +479,35 @@ export default function SessionScreen({ route, navigation }) {
                         overshootRight={false}
                         rightThreshold={64}
                       >
-                        <View style={styles.queueRowBlack}>
-                          <View style={styles.songInfo}>
-                            <Text style={styles.songTitleWhite}>{item.song_title}</Text>
-                            <Text style={styles.songArtistWhite}>{item.artist}</Text>
-                          </View>
-                          <View style={styles.voteCountBadgeYellow}>
-                            <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
-                          </View>
+                  <View style={styles.queueRowBlack}>
+                    <View style={styles.songInfo}>
+                      <Text style={styles.songTitleWhite}>{item.song_title}</Text>
+                      <Text style={styles.songArtistWhite}>{item.artist}</Text>
+                    </View>
+                    <View style={styles.voteCountBadgeYellow}>
+                      <Text style={styles.voteCountTextBlack}>{item.vote_count}</Text>
+                    </View>
                           {isOwnRequest ? (
                             <View style={styles.ownRequestLabelContainer}>
                               <Text style={styles.ownRequestLabel} numberOfLines={1} ellipsizeMode="tail">Your Request</Text>
                             </View>
                           ) : (
-                            <View style={styles.voteArrowGroupBlack}>
-                              <TouchableOpacity
-                                style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                                onPress={() => handleUpvote(item.request_id)}
-                                disabled={voteUsage.upvotes_left === 0}
-                              >
-                                <Text style={styles.voteArrowWhite}>▲</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
-                                onPress={() => handleDownvote(item.request_id)}
-                                disabled={voteUsage.downvotes_left === 0}
-                              >
-                                <Text style={styles.voteArrowWhite}>▼</Text>
-                              </TouchableOpacity>
-                            </View>
+                    <View style={styles.voteArrowGroupBlack}>
+                      <TouchableOpacity
+                        style={[styles.voteCircleColored, styles.upvoteCircleColored, voteUsage.upvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                        onPress={() => handleUpvote(item.request_id)}
+                        disabled={voteUsage.upvotes_left === 0}
+                      >
+                        <Text style={styles.voteArrowWhite}>▲</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.voteCircleColored, styles.downvoteCircleColored, voteUsage.downvotes_left === 0 && styles.voteCircleDisabledBlack]}
+                        onPress={() => handleDownvote(item.request_id)}
+                        disabled={voteUsage.downvotes_left === 0}
+                      >
+                        <Text style={styles.voteArrowWhite}>▼</Text>
+                      </TouchableOpacity>
+                    </View>
                           )}
                         </View>
                       </Swipeable>
@@ -536,8 +543,8 @@ export default function SessionScreen({ route, navigation }) {
                             >
                               <Text style={styles.voteArrowWhite}>▼</Text>
                             </TouchableOpacity>
-                          </View>
-                        )}
+                  </View>
+                )}
                       </View>
                     );
                   }
@@ -610,6 +617,38 @@ export default function SessionScreen({ route, navigation }) {
               />
             </View>
           </View>
+          {/* Share Button */}
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={() => setQrVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Share session via QR code"
+          >
+            <Ionicons name="share-social" size={24} color={colors.primary} />
+            <Text style={styles.shareButtonText}>Share</Text>
+          </TouchableOpacity>
+          {/* QR Code Modal */}
+          <Modal
+            visible={qrVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setQrVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.qrModalContent}>
+                <Text style={styles.qrTitle}>Scan to Join Session</Text>
+                {joinUrl ? (
+                  <QRCode value={joinUrl} size={220} />
+                ) : (
+                  <ActivityIndicator />
+                )}
+                <Text selectable style={styles.qrUrl}>{joinUrl}</Text>
+                <Pressable style={styles.closeButton} onPress={() => setQrVisible(false)}>
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -1087,5 +1126,68 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     letterSpacing: 0.2,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  shareButtonText: {
+    color: colors.primary,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: 320,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  qrTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: colors.primary,
+  },
+  qrUrl: {
+    marginTop: 16,
+    color: '#333',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+  },
+  closeButtonText: {
+    color: colors.black,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 }); 

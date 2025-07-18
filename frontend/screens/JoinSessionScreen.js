@@ -82,27 +82,27 @@ export default function JoinSessionScreen({ navigation }) {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.topSection}>
-        <Text style={styles.title}>Join a Session</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter session code"
-          placeholderTextColor={colors.gray}
-          value={sessionCode}
-          onChangeText={setSessionCode}
-          autoCapitalize="characters"
+      <Text style={styles.title}>Join a Session</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter session code"
+        placeholderTextColor={colors.gray}
+        value={sessionCode}
+        onChangeText={setSessionCode}
+        autoCapitalize="characters"
           autoFocus={true}
           editable={true}
           onFocus={() => console.log('Session code input focused')}
-        />
-        <TouchableOpacity
-          style={[styles.button, { opacity: sessionCode ? 1 : 0.5 }]}
-          onPress={handleGoToSession}
-          disabled={!sessionCode || loading}
-        >
-          {loading ? <ActivityIndicator color={colors.buttonText} /> : <Text style={styles.buttonText}>Go to Session</Text>}
-        </TouchableOpacity>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </View>
+      />
+      <TouchableOpacity
+        style={[styles.button, { opacity: sessionCode ? 1 : 0.5 }]}
+        onPress={handleGoToSession}
+        disabled={!sessionCode || loading}
+      >
+        {loading ? <ActivityIndicator color={colors.buttonText} /> : <Text style={styles.buttonText}>Go to Session</Text>}
+      </TouchableOpacity>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
     </ScrollView>
   );
 }

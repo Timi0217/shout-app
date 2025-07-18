@@ -72,13 +72,13 @@ export default function CreateOrJoinScreen({ navigation }) {
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, { marginTop: 28 }]} onPress={() => navigation.navigate('JoinSession')}>
           <Text style={styles.buttonText}>JOIN SESSION</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
       </View>
       {/* Footer tag at the bottom */}
       <View style={styles.footerTagContainer}>
         <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/timilehyinn/')} activeOpacity={0.7}>
           <Text style={styles.footerTag}>made with love by tmi 💛</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
       </View>
     </View>
   );
