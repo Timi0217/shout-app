@@ -328,23 +328,33 @@ export default function SessionScreen({ route, navigation }) {
         </TouchableOpacity>
       ),
       headerRight: () => (
-        user ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
-            onPress={async () => { await logout(); }}
-            style={styles.logoutButton}
-            activeOpacity={0.85}
+            style={[styles.shareButton, { marginRight: 0, marginLeft: 0, borderWidth: 0, backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0, shadowOpacity: 0 }]}
+            onPress={() => setQrVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Share session via QR code"
           >
-            <Text style={styles.logoutButtonText}>Logout</Text>
+            <Ionicons name="share-social" size={28} color={colors.primary} />
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PhoneLogin')}
-            style={styles.logoutButton}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.logoutButtonText}>Login</Text>
-          </TouchableOpacity>
-        )
+          {user ? (
+            <TouchableOpacity
+              onPress={async () => { await logout(); }}
+              style={styles.logoutButton}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('PhoneLogin')}
+              style={styles.logoutButton}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.logoutButtonText}>Login</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       ),
     });
   }, [navigation, logout, user]);
@@ -617,16 +627,6 @@ export default function SessionScreen({ route, navigation }) {
               />
             </View>
           </View>
-          {/* Share Button */}
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={() => setQrVisible(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Share session via QR code"
-          >
-            <Ionicons name="share-social" size={24} color={colors.primary} />
-            <Text style={styles.shareButtonText}>Share</Text>
-          </TouchableOpacity>
           {/* QR Code Modal */}
           <Modal
             visible={qrVisible}
