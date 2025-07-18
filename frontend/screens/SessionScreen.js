@@ -328,14 +328,27 @@ export default function SessionScreen({ route, navigation }) {
         </TouchableOpacity>
       ),
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', height: 48 }}>
           <TouchableOpacity
-            style={[styles.shareButton, { marginRight: 0, marginLeft: 0 }]}
+            style={[
+              styles.shareButton,
+              {
+                marginRight: 0,
+                marginLeft: 0,
+                height: 40,
+                paddingVertical: 8,
+                paddingHorizontal: 18,
+                borderRadius: 12,
+                justifyContent: 'center',
+                alignItems: 'center',
+                display: 'flex',
+              },
+            ]}
             onPress={() => setQrVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Share session via QR code"
           >
-            <Ionicons name="share-social" size={24} color={colors.primary} />
+            <Ionicons name="share-social" size={24} color={colors.primary} style={{ marginRight: 6 }} />
             <Text style={styles.shareButtonText}>Share</Text>
           </TouchableOpacity>
           {user ? (
