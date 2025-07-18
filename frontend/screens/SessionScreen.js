@@ -33,7 +33,7 @@ export default function SessionScreen({ route, navigation }) {
 
   // Generate join URL for QR code
   const joinUrl = liveSession?.session_code
-    ? `https://yourapp.com/join?session=${liveSession.session_code}`
+    ? `https://www.joinshout.fyi/sessions/${liveSession.session_code}`
     : '';
 
   // Fetch session data on mount or when sessionCode changes
