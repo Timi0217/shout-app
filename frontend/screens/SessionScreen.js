@@ -331,30 +331,34 @@ export default function SessionScreen({ route, navigation }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', height: 48 }}>
           <TouchableOpacity
             style={[
-              styles.shareButton,
+              styles.logoutButton,
               {
-                marginRight: 0,
+                flexDirection: 'row',
+                backgroundColor: '#fff',
+                borderColor: colors.primary,
+                borderWidth: 2,
+                marginRight: 8,
                 marginLeft: 0,
-                height: 40,
-                paddingVertical: 8,
                 paddingHorizontal: 18,
-                borderRadius: 12,
-                justifyContent: 'center',
+                paddingVertical: 8,
                 alignItems: 'center',
-                display: 'flex',
+                justifyContent: 'center',
+                minWidth: 0,
+                height: 40,
               },
             ]}
             onPress={() => setQrVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Share session via QR code"
+            activeOpacity={0.85}
           >
-            <Ionicons name="share-social" size={24} color={colors.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.shareButtonText}>Share</Text>
+            <Ionicons name="share-social" size={22} color={colors.primary} style={{ marginRight: 8 }} />
+            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Share</Text>
           </TouchableOpacity>
           {user ? (
             <TouchableOpacity
               onPress={async () => { await logout(); }}
-              style={styles.logoutButton}
+              style={[styles.logoutButton, { marginLeft: 0, height: 40, paddingHorizontal: 18, paddingVertical: 8, minWidth: 0 }]}
               activeOpacity={0.85}
             >
               <Text style={styles.logoutButtonText}>Logout</Text>
@@ -362,7 +366,7 @@ export default function SessionScreen({ route, navigation }) {
           ) : (
             <TouchableOpacity
               onPress={() => navigation.navigate('PhoneLogin')}
-              style={styles.logoutButton}
+              style={[styles.logoutButton, { marginLeft: 0, height: 40, paddingHorizontal: 18, paddingVertical: 8, minWidth: 0 }]}
               activeOpacity={0.85}
             >
               <Text style={styles.logoutButtonText}>Login</Text>
