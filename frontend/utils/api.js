@@ -1,6 +1,7 @@
-// For local development
-const API_URL = 'http://192.168.0.242:4000';
-// Production: 'https://amiable-upliftment-production.up.railway.app'
+// Environment-based API URL
+const API_URL = __DEV__ 
+  ? 'http://192.168.0.242:4000'  // Local development
+  : 'https://amiable-upliftment-production.up.railway.app'; // Production
 
 export async function createSession({ dj_id, venue_name, status }) {
   const res = await fetch(`${API_URL}/sessions`, {
