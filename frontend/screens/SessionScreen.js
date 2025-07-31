@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, ScrollView, ToastAndroid, RefreshControl, Modal, Pressable } from 'react-native';
 import colors from '../constants/colors';
-import { searchSpotify, addSongRequest, getSessionQueue, upvoteRequest, downvoteRequest, getVoteUsage, getAddUsage, removeSongRequest } from '../utils/api';
+import { searchSpotify, addSongRequest, getSessionQueue, upvoteRequest, downvoteRequest, getVoteUsage, getAddUsage, removeSongRequest, joinSession } from '../utils/api';
 import { useAuth } from '../AuthContext';
 import homeIcon from '../assets/homebutton.png';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,14 +42,10 @@ export default function SessionScreen({ route, navigation }) {
     const fetchSession = async () => {
       setLiveSession(null);
       try {
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${sessionCode}`);
-        if (res.ok) {
-          const data = await res.json();
-          setLiveSession(data);
-        } else {
-          setLiveSession(null);
-        }
+        const data = await joinSession(sessionCode);
+        setLiveSession(data);
       } catch (err) {
+        console.error('Failed to fetch session:', err);
         setLiveSession(null);
       }
     };
@@ -93,11 +89,8 @@ export default function SessionScreen({ route, navigation }) {
     if (showLoader) setIsRefreshing(true);
     try {
       // Refresh session info
-      const sessionResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://amiable-upliftment-production.up.railway.app'}/sessions/${liveSession.session_code}`);
-      if (sessionResponse.ok) {
-        const updatedSession = await sessionResponse.json();
-        setLiveSession(updatedSession);
-      }
+      const updatedSession = await joinSession(liveSession.session_code);
+      setLiveSession(updatedSession);
       // Refresh queue
       await fetchQueue();
       // Refresh usage data
@@ -313,6 +306,11 @@ export default function SessionScreen({ route, navigation }) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
+      headerStyle: {
+        backgroundColor: colors.background,
+        shadowColor: 'transparent',
+        elevation: 0,
+      },
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => {
@@ -322,54 +320,38 @@ export default function SessionScreen({ route, navigation }) {
               navigation.navigate('CreateOrJoin');
             }
           }}
-          style={{ marginLeft: 16 }}
+          style={styles.headerButton}
         >
-          <Ionicons name="arrow-back" size={28} color="#222" />
+          <Ionicons name="arrow-back" size={26} color={colors.text} />
         </TouchableOpacity>
       ),
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', height: 48 }}>
+        <View style={styles.headerRightContainer}>
           <TouchableOpacity
-            style={[
-              styles.logoutButton,
-              {
-                flexDirection: 'row',
-                backgroundColor: '#fff',
-                borderColor: colors.primary,
-                borderWidth: 2,
-                marginRight: 8,
-                marginLeft: 0,
-                paddingHorizontal: 18,
-                paddingVertical: 8,
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: 0,
-                height: 40,
-              },
-            ]}
+            style={styles.shareButton}
             onPress={() => setQrVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Share session via QR code"
             activeOpacity={0.85}
           >
-            <Ionicons name="share-social" size={22} color={colors.primary} style={{ marginRight: 8 }} />
-            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Share</Text>
+            <Ionicons name="share-social" size={20} color={colors.primary} style={{ marginRight: 6 }} />
+            <Text style={styles.shareButtonText}>Share</Text>
           </TouchableOpacity>
           {user ? (
             <TouchableOpacity
               onPress={async () => { await logout(); }}
-              style={[styles.logoutButton, { marginLeft: 0, height: 40, paddingHorizontal: 18, paddingVertical: 8, minWidth: 0 }]}
+              style={styles.headerLogoutButton}
               activeOpacity={0.85}
             >
-              <Text style={styles.logoutButtonText}>Logout</Text>
+              <Text style={styles.headerLogoutButtonText}>Logout</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={() => navigation.navigate('PhoneLogin')}
-              style={[styles.logoutButton, { marginLeft: 0, height: 40, paddingHorizontal: 18, paddingVertical: 8, minWidth: 0 }]}
+              style={styles.headerLogoutButton}
               activeOpacity={0.85}
             >
-              <Text style={styles.logoutButtonText}>Login</Text>
+              <Text style={styles.headerLogoutButtonText}>Login</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -697,20 +679,22 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   cardContainer: {
-    width: '94%',
+    width: '92%',
     alignSelf: 'center',
-    marginBottom: 0,
+    marginBottom: 16,
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 20,
+    borderRadius: 14,
+    padding: 22,
     marginBottom: 20,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   cardTitle: {
     fontSize: 20,
@@ -993,16 +977,18 @@ const styles = StyleSheet.create({
   },
   queueCardFullBlack: {
     backgroundColor: '#000',
-    borderRadius: 10,
+    borderRadius: 14,
     padding: 0,
     marginBottom: 18,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
-    height: 4 * 68,
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 5,
+    height: 4 * 72,
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(245, 195, 44, 0.08)',
   },
   queueRowBlack: {
     flexDirection: 'row',
@@ -1010,9 +996,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 0,
     marginBottom: 0,
-    padding: 16,
+    padding: 18,
     width: '100%',
-    minHeight: 68,
+    minHeight: 72,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   songTitleWhite: {
     fontSize: 16,
@@ -1207,5 +1195,59 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  // New header styles
+  headerButton: {
+    marginLeft: 16,
+    padding: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    gap: 8,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderColor: colors.primary,
+    borderWidth: 2,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  shareButtonText: {
+    color: colors.primary,
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  headerLogoutButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerLogoutButtonText: {
+    color: colors.black,
+    fontWeight: '900',
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
 }); 

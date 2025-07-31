@@ -6,6 +6,7 @@ let tokenExpires = 0;
 
 async function getSpotifyToken() {
   if (cachedToken && Date.now() < tokenExpires) return cachedToken;
+  
   const creds = Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64');
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -16,6 +17,11 @@ async function getSpotifyToken() {
     body: 'grant_type=client_credentials',
   });
   const data = await res.json();
+  
+  if (data.error) {
+    throw new Error(`Spotify authentication failed: ${data.error_description}`);
+  }
+  
   cachedToken = data.access_token;
   tokenExpires = Date.now() + (data.expires_in - 60) * 1000; // buffer 1 min
   return cachedToken;

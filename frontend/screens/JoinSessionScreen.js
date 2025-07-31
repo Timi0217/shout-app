@@ -48,6 +48,11 @@ export default function JoinSessionScreen({ navigation }) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
+      headerStyle: {
+        backgroundColor: colors.background,
+        shadowColor: 'transparent',
+        elevation: 0,
+      },
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => {
@@ -57,19 +62,19 @@ export default function JoinSessionScreen({ navigation }) {
               navigation.navigate('CreateOrJoin');
             }
           }}
-          style={{ marginLeft: 16 }}
+          style={styles.headerButton}
         >
-          <Ionicons name="arrow-back" size={28} color="#222" />
+          <Ionicons name="arrow-back" size={26} color={colors.text} />
         </TouchableOpacity>
       ),
       headerRight: () => (
         user ? (
           <TouchableOpacity
             onPress={async () => { await logout(); }}
-            style={styles.logoutButton}
+            style={styles.headerLogoutButton}
             activeOpacity={0.85}
           >
-            <Text style={styles.logoutButtonText}>Logout</Text>
+            <Text style={styles.headerLogoutButtonText}>Logout</Text>
           </TouchableOpacity>
         ) : null
       ),
@@ -113,7 +118,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    padding: 24,
+    padding: 28,
   },
   topSection: {
     width: '100%',
@@ -130,13 +135,22 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     backgroundColor: colors.gray,
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: 14,
+    padding: 18,
     fontSize: 18,
     color: colors.text,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(245, 195, 44, 0.15)',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    fontWeight: '700',
   },
   button: {
     backgroundColor: colors.primary,
@@ -181,5 +195,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  // New standardized header styles
+  headerButton: {
+    marginLeft: 16,
+    padding: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogoutButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+  },
+  headerLogoutButtonText: {
+    color: colors.black,
+    fontWeight: '900',
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
 }); 

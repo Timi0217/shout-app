@@ -1,10 +1,12 @@
-const API_URL = 'https://amiable-upliftment-production.up.railway.app'; // Production backend URL using HTTPS
+// For local development
+const API_URL = 'http://192.168.0.242:4000';
+// Production: 'https://amiable-upliftment-production.up.railway.app'
 
 export async function createSession({ dj_id, venue_name, status }) {
   const res = await fetch(`${API_URL}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dj_id, venue_name, status })
+    body: JSON.stringify({ dj_id, status })
   });
   if (!res.ok) throw new Error('Failed to create session');
   return res.json();
@@ -80,13 +82,11 @@ export async function getVoteUsage(session_id, user_id) {
 }
 
 export async function sendOTP(phone_number) {
-  const res = await fetch(`${API_URL}/auth/send-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone_number })
+  // OTP functionality not implemented in backend yet
+  // For now, return a mock response
+  return new Promise(resolve => {
+    setTimeout(() => resolve({ success: true, message: 'OTP sent' }), 1000);
   });
-  if (!res.ok) throw new Error('Failed to send OTP');
-  return res.json();
 }
 
 export async function removeSongRequest({ session_id, request_id, user_id }) {

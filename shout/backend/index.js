@@ -6,23 +6,34 @@ const generateSessionCode = require('./sessionCode');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// SIMPLE CORS - echo origin for joinshout.fyi, wildcard for others
+// Secure CORS configuration
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  // Log for debugging
-  console.log('Request from origin:', origin);
-  // Handle both www and non-www versions
-  if (origin && origin.includes('joinshout.fyi')) {
-    res.setHeader('Access-Control-Allow-Origin', origin); // Use the exact origin
+  const allowedOrigins = [
+    'https://joinshout.fyi',
+    'https://www.joinshout.fyi',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://192.168.0.242:4000',
+    'http://192.168.0.242:3000',
+    'http://192.168.0.242:8081'
+  ];
+  
+  // Only allow specific origins in production
+  if (process.env.NODE_ENV === 'production') {
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
   } else {
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Fallback wildcard
+    // Allow all origins in development
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
   }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
   res.setHeader('Access-Control-Max-Age', '86400');
-  // Handle preflight
+  
   if (req.method === 'OPTIONS') {
-    console.log('Handling preflight for:', req.url);
     return res.status(200).end();
   }
   next();
@@ -30,11 +41,67 @@ app.use((req, res, next) => {
 
 //test
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-// Logging middleware
+// Input validation middleware
+const validateInput = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        error: 'Invalid input',
+        details: error.details.map(d => d.message)
+      });
+    }
+    next();
+  };
+};
+
+// Simple validation schemas
+const sessionSchema = {
+  validate: (data) => {
+    const errors = [];
+    if (!data.dj_id || typeof data.dj_id !== 'string') {
+      errors.push({ message: 'dj_id is required and must be a string' });
+    }
+    if (data.status && typeof data.status !== 'string') {
+      errors.push({ message: 'status must be a string' });
+    }
+    return { error: errors.length > 0 ? { details: errors } : null };
+  }
+};
+
+const requestSchema = {
+  validate: (data) => {
+    const errors = [];
+    if (!data.song_title || typeof data.song_title !== 'string' || data.song_title.trim().length === 0) {
+      errors.push({ message: 'song_title is required and must be a non-empty string' });
+    }
+    if (!data.artist || typeof data.artist !== 'string' || data.artist.trim().length === 0) {
+      errors.push({ message: 'artist is required and must be a non-empty string' });
+    }
+    if (!data.user_id || typeof data.user_id !== 'string') {
+      errors.push({ message: 'user_id is required and must be a string' });
+    }
+    return { error: errors.length > 0 ? { details: errors } : null };
+  }
+};
+
+const voteSchema = {
+  validate: (data) => {
+    const errors = [];
+    if (!data.user_id || typeof data.user_id !== 'string') {
+      errors.push({ message: 'user_id is required and must be a string' });
+    }
+    return { error: errors.length > 0 ? { details: errors } : null };
+  }
+};
+
+// Logging middleware - reduced in production
 app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.originalUrl} from ${req.headers.origin}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[${req.method}] ${req.originalUrl} from ${req.headers.origin}`);
+  }
   next();
 });
 
@@ -55,7 +122,6 @@ app.get('/test', (req, res) => {
 });
 
 app.get('/sessions', (req, res) => {
-  console.log('GET /sessions called');
   res.json({ 
     status: 'success', 
     sessions: ['test-session'],
@@ -63,15 +129,17 @@ app.get('/sessions', (req, res) => {
   });
 });
 
-app.post('/sessions', async (req, res) => {
+app.post('/sessions', validateInput(sessionSchema), async (req, res) => {
   try {
     const { dj_id, status } = req.body;
     const session_code = generateSessionCode ? generateSessionCode(6) : Math.random().toString(36).substring(2, 8).toUpperCase();
+    
     const result = await db.query(
       'INSERT INTO sessions (dj_id, status, session_code) VALUES ($1, $2, $3) RETURNING *',
       [dj_id, status || 'live', session_code]
     );
     const session = result.rows[0];
+    
     res.json({
       status: 'created',
       success: true,
@@ -79,12 +147,15 @@ app.post('/sessions', async (req, res) => {
       session_id: session.session_code // for compatibility with frontend
     });
   } catch (error) {
-    console.error('Session creation error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Session creation error:', error);
+    }
+    const isDevelopment = process.env.NODE_ENV === 'development';
     res.status(500).json({
       status: 'error',
       success: false,
       error: error.message,
-      stack: error.stack
+      ...(isDevelopment && { stack: error.stack })
     });
   }
 });
@@ -105,11 +176,12 @@ async function getSessionIdFromCode(session_code) {
   return result.rows[0].session_id;
 }
 
-// Helper to send full error details in API responses
+// Helper to send appropriate error details in API responses
 function sendFullError(res, err, fallback) {
+  const isDevelopment = process.env.NODE_ENV === 'development';
   res.status(500).json({
     error: err.message || fallback,
-    stack: err.stack || null
+    ...(isDevelopment && { stack: err.stack })
   });
 }
 
@@ -159,7 +231,7 @@ app.get('/sessions/:session_id/requests', async (req, res) => {
 });
 
 // Add a song request to a session
-app.post('/sessions/:session_id/requests', async (req, res) => {
+app.post('/sessions/:session_id/requests', validateInput(requestSchema), async (req, res) => {
   try {
     const session_code = req.params.session_id.toUpperCase();
     const session_id = await getSessionIdFromCode(session_code);
@@ -205,7 +277,7 @@ app.delete('/sessions/:session_id/requests/:request_id', async (req, res) => {
 
 // --- VOTING ENDPOINTS ---
 // Upvote a song request
-app.post('/requests/:request_id/upvote', async (req, res) => {
+app.post('/requests/:request_id/upvote', validateInput(voteSchema), async (req, res) => {
   try {
     const { request_id } = req.params;
     const { user_id } = req.body;
@@ -233,7 +305,7 @@ app.post('/requests/:request_id/upvote', async (req, res) => {
 });
 
 // Downvote a song request
-app.post('/requests/:request_id/downvote', async (req, res) => {
+app.post('/requests/:request_id/downvote', validateInput(voteSchema), async (req, res) => {
   try {
     const { request_id } = req.params;
     const { user_id } = req.body;
@@ -318,16 +390,15 @@ app.get('/spotify/search', async (req, res) => {
 app.get('/sessions/:session_code', async (req, res) => {
   try {
     const session_code = req.params.session_code.toUpperCase();
-    console.log('Looking for session:', session_code);
     const result = await db.query('SELECT * FROM sessions WHERE session_code = $1', [session_code]);
-    console.log('Query result:', result.rows);
     if (result.rows.length === 0) {
-      console.log('No session found with code:', session_code);
       return res.status(404).json({ error: 'Session not found' });
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Session lookup error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Session lookup error:', error);
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -367,14 +438,18 @@ app.post('/sessions/:session_code/join', async (req, res) => {
     const updatedSession = await db.query('SELECT * FROM sessions WHERE session_code = $1', [session_code]);
     res.json(updatedSession.rows[0]);
   } catch (error) {
-    console.error('Join session error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Join session error:', error);
+    }
     res.status(500).json({ error: error.message });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`🎵 SHOUT Backend listening on port ${PORT}`);
-  console.log(`🚀 CORS enabled for ALL origins (debugging mode)`);
-  console.log(`📊 Health check: /health`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🚀 CORS configured for allowed origins`);
+    console.log(`📊 Health check: /health`);
+  }
 }); 
 //test// CORS fix wildcard approach
